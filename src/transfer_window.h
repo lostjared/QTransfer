@@ -16,10 +16,11 @@ public:
     
 public slots:
     void onConnect();
+    void onListen();
     
 private:
     QMenu *file_menu;
-    QAction *file_connect;
+    QAction *file_connect, *file_listen;
 
     
 };
