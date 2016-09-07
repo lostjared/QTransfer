@@ -12,8 +12,14 @@ class TransferWindow : public QMainWindow {
 public:
     
     TransferWindow(QWidget *parent = 0);
+    void createMenu();
     
 public slots:
+    void onConnect();
+    
+private:
+    QMenu *file_menu;
+    QAction *file_connect;
 
     
 };
