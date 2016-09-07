@@ -2,7 +2,7 @@
 
 Small Practice C++ Application to Transfer a file
 
-To build run:
+To build in the src directory:
 
 qmake
 
