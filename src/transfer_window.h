@@ -10,6 +10,9 @@ class ConnectWindow : public QDialog {
     
 public:
     ConnectWindow(QWidget *parent = 0);
+    QLineEdit *tex_ip, *tex_port;
+    QLabel *con_status;
+    QPushButton *con_start;
 };
 
 class ListenWindow : public QDialog {

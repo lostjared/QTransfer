@@ -7,6 +7,7 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     statusBar()->showMessage(tr("Welcome to QTransfer"));
     con_window = new ConnectWindow(this);
     listen_window = new ListenWindow(this);
+    setWindowTitle("QTransfer - ");
 }
 
 void TransferWindow::createMenu() {
@@ -42,7 +43,21 @@ void TransferWindow::onAbout() {
 }
 
 ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
-    setGeometry(100, 100, 300, 200);
+    setGeometry(100, 100, 310, 200);
+    QLabel *lbl_1 = new QLabel("IP: ", this);
+    lbl_1->setGeometry(10, 10, 25, 25);
+    tex_ip = new QLineEdit("", this);
+    tex_ip->setGeometry(35, 10, 100, 20);
+    tex_port = new QLineEdit("", this);
+    QLabel *lbl_2 = new QLabel("Port: ", this);
+    lbl_2->setGeometry(140, 10, 25, 25);
+    tex_port->setGeometry(170, 10, 50, 20);
+    con_start = new QPushButton("Connect", this);
+    con_start->setGeometry(225, 10, 75, 20);
+    con_status = new QLabel("Status..", this);
+    con_status->setGeometry(10, 30, 200, 25);
+    setWindowTitle("Connect to IP Address");
+    
 }
 
 ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
