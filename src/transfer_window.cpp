@@ -6,6 +6,7 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     createMenu();
     statusBar()->showMessage(tr("Welcome to QTransfer"));
     con_window = new ConnectWindow(this);
+    listen_window = new ListenWindow(this);
 }
 
 void TransferWindow::createMenu() {
@@ -20,7 +21,12 @@ void TransferWindow::createMenu() {
     file_listen->setStatusTip(tr("Listen for Connection"));
     file_menu->addAction(file_listen);
     connect(file_listen, SIGNAL(triggered()), this, SLOT(onListen()));
-    
+    help_menu = menuBar()->addMenu(tr("&Help"));
+    help_about = new QAction(tr("&About"), this);
+    help_about->setShortcut(tr("Ctrl+A"));
+    help_about->setStatusTip(tr("About this program"));
+    help_menu->addAction(help_about);
+    connect(help_about, SIGNAL(triggered()), this, SLOT(onAbout()));
 }
 
 void TransferWindow::onConnect() {
@@ -28,10 +34,17 @@ void TransferWindow::onConnect() {
 }
 
 void TransferWindow::onListen() {
-    
+    listen_window->show();
+}
+
+void TransferWindow::onAbout() {
+    QMessageBox::information(this, "About QTransfer", "Written by Jared Bruni in C++<br>\n<a href=\"http://lostsidedead.com\">http://lostsidedead.com</a>");
 }
 
 ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
-    
-    
+    setGeometry(100, 100, 300, 200);
+}
+
+ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
+    setGeometry(100,100,300,200);
 }

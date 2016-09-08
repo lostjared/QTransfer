@@ -12,14 +12,19 @@ public:
     ConnectWindow(QWidget *parent = 0);
 };
 
-
-class TransferWindow : public QMainWindow {
-    
+class ListenWindow : public QDialog {
     Q_OBJECT
     
 public:
-    
+    ListenWindow(QWidget *parent = 0);
+};
+
+
+class TransferWindow : public QMainWindow {
+    Q_OBJECT
+public:
     ConnectWindow *con_window;
+    ListenWindow *listen_window;
     
     TransferWindow(QWidget *parent = 0);
     void createMenu();
@@ -27,15 +32,13 @@ public:
 public slots:
     void onConnect();
     void onListen();
+    void onAbout();
     
 private:
-    QMenu *file_menu;
+    QMenu *file_menu, *help_menu;
     QAction *file_connect, *file_listen;
-
-    
+    QAction *help_about;
 };
-
-
 
 
 #endif
