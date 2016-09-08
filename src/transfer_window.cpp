@@ -5,6 +5,7 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     setGeometry(100, 100, 800, 600);
     createMenu();
     statusBar()->showMessage(tr("Welcome to QTransfer"));
+    con_window = new ConnectWindow(this);
 }
 
 void TransferWindow::createMenu() {
@@ -23,9 +24,14 @@ void TransferWindow::createMenu() {
 }
 
 void TransferWindow::onConnect() {
-    
+    con_window->show();
 }
 
 void TransferWindow::onListen() {
+    
+}
+
+ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
+    
     
 }

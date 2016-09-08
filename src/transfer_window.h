@@ -5,11 +5,21 @@
 #include<QtGui>
 
 
+class ConnectWindow : public QDialog {
+    Q_OBJECT
+    
+public:
+    ConnectWindow(QWidget *parent = 0);
+};
+
+
 class TransferWindow : public QMainWindow {
     
     Q_OBJECT
     
 public:
+    
+    ConnectWindow *con_window;
     
     TransferWindow(QWidget *parent = 0);
     void createMenu();
@@ -24,7 +34,6 @@ private:
 
     
 };
-
 
 
 
