@@ -27,11 +27,14 @@ public:
     ListenWindow(QWidget *parent = 0);
 public slots:
     void onListen();
+    void onSelectFile();
     
 private:
     QLineEdit *list_port;
     QPushButton *list_start;
-    QLabel *list_status;
+    QPushButton *list_select;
+    QLabel *list_status, *list_file;
+    QString file_name;
 };
 
 
@@ -48,11 +51,16 @@ public slots:
     void onConnect();
     void onListen();
     void onAbout();
+    void onCancel();
+    void onShowInFinder();
     
 private:
     QMenu *file_menu, *help_menu;
     QAction *file_connect, *file_listen;
     QAction *help_about;
+    QProgressBar *transfer_bar;
+    QLabel *file_name;
+    QPushButton *file_cancel, *file_show;
 };
 
 
