@@ -3,6 +3,7 @@
 
 #include<QtCore>
 #include<QtGui>
+#include<QTcpSocket>
 
 class TransferWindow;
 
@@ -12,6 +13,9 @@ class ConnectWindow : public QDialog {
 public:
     ConnectWindow(QWidget *parent = 0);
     void setParentWindow(TransferWindow *win);
+    
+    
+    friend class TransferWindow;
     
 public slots:
     void onConnect();
@@ -29,6 +33,8 @@ class ListenWindow : public QDialog {
 public:
     ListenWindow(QWidget *parent = 0);
     void setParentWindow(TransferWindow *win);
+    
+    friend class TransferWindow;
     
 public slots:
     void onListen();
@@ -63,6 +69,10 @@ public slots:
     void onAbout();
     void onCancel();
     void onShowInFinder();
+    void onConConnected();
+    void onConDisconnected();
+    void onConError(QAbstractSocket::SocketError se);
+    
     
 private:
     QMenu *file_menu, *help_menu;
@@ -71,6 +81,7 @@ private:
     QProgressBar *transfer_bar;
     QLabel *file_name;
     QPushButton *file_cancel, *file_show;
+    QTcpSocket *socket_;
 };
 
 

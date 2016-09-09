@@ -1,5 +1,5 @@
 #include "transfer_window.h"
-
+#include<iostream>
 
 TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     setGeometry(100, 100, 640, 200);
@@ -17,9 +17,10 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     
     file_cancel = new QPushButton("Cancel", this);
     file_cancel->setGeometry(520, 55, 100, 20);
+    file_cancel->setEnabled(false);
     file_show = new QPushButton("Show", this);
     file_show->setGeometry(410, 55, 100, 20);
-    
+    file_show->setEnabled(false);
     connect(file_cancel, SIGNAL(clicked()), this, SLOT(onCancel()));
     connect(file_show, SIGNAL(clicked()), this, SLOT(onShowInFinder()));
     
@@ -49,7 +50,17 @@ void TransferWindow::createMenu() {
 
 bool TransferWindow::connectTo(QString ip, int port) {
     
-    return false;
+    socket_ = new QTcpSocket(this);
+    
+    connect(socket_, SIGNAL(connected()), this, SLOT(onConConnected()));
+    connect(socket_, SIGNAL(disconnected()), this, SLOT(onConDisconnected()));
+    connect(socket_, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onConError(QAbstractSocket::SocketError)));
+    
+    con_window->con_status->setText("Connecting .... ");
+    std::cout << "Connecting to: " << ip.toUtf8().data() << ":" << port << "\n";
+    socket_->connectToHost(ip, port);
+    
+    return true;
 }
 
 void TransferWindow::listenTo(int port) {
@@ -71,6 +82,24 @@ void TransferWindow::onShowInFinder() {
     
 }
 
+void TransferWindow::onConConnected() {
+    std::cout << "Connected..\n";
+    con_window->hide();
+    statusBar()->showMessage("Connected");
+    // recv file
+}
+void TransferWindow::onConDisconnected() {
+    std::cout << "Disconnected..\n";
+    statusBar()->showMessage("Disconnected");
+}
+void TransferWindow::onConError(QAbstractSocket::SocketError se) {
+    std::cout << "Error occoured.\n";
+    if(se == QAbstractSocket::ConnectionRefusedError)
+        con_window->con_status->setText(tr("Connection refused..\n"));
+    else
+        con_window->con_status->setText(tr("An error occured..\n"));
+}
+
 void TransferWindow::onAbout() {
     QMessageBox::information(this, "About QTransfer", "Written by Jared Bruni in C++<br>\n<a href=\"http://lostsidedead.com\">http://lostsidedead.com</a>");
 }
@@ -89,7 +118,7 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     con_start = new QPushButton("Connect", this);
     con_start->setGeometry(225, 10, 75, 20);
     con_status = new QLabel("Status..", this);
-    con_status->setGeometry(10, 35, 75, 25);
+    con_status->setGeometry(10, 40, 300, 25);
     setWindowTitle("Connect to IP Address");
     connect(con_start, SIGNAL(clicked()), this, SLOT(onConnect()));
     setFixedSize(310, 75);
@@ -97,25 +126,27 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
 
 // Connect code here
 void ConnectWindow::onConnect() {
-  
     QString ip = tex_ip->text();
     QRegExp ex("(\\d{1,3}(\\.\\d{1,3}){3})");
     if(!ex.exactMatch(ip)) {
         QMessageBox::information(this, "Invalid", "Invalid IP address try again..\n");
         return;
     }
-    
     QString port = tex_port->text();
+    
+    if(port.toInt() <= 0) {
+        QMessageBox::information(this, "Invalid Port", "Invalid Port Number...\n");
+        return;
+    }
+    
     if(parent_->connectTo(ip, port.toInt()) == true) {
         
     }
-    
 }
 
 void ConnectWindow::setParentWindow(TransferWindow *win) {
     parent_ = win;
 }
-
 
 ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     setGeometry(100,100,270,110);
@@ -141,6 +172,10 @@ ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
 
 void ListenWindow::onListen() {
     QString port = list_port->text();
+    if(port.toInt() <= 0) {
+        QMessageBox::information(this, "Invalid Port", "Invalid Port Number...\n");
+        return;
+    }
     parent_->listenTo(port.toInt());
 }
 
