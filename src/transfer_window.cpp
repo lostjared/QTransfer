@@ -7,6 +7,8 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     statusBar()->showMessage(tr("Welcome to QTransfer"));
     con_window = new ConnectWindow(this);
     listen_window = new ListenWindow(this);
+    con_window->setParentWindow(this);
+    listen_window->setParentWindow(this);
     
     file_name = new QLabel(tr("File name"), this);
     file_name->setGeometry(10, 10, 200, 20);
@@ -43,6 +45,15 @@ void TransferWindow::createMenu() {
     help_about->setStatusTip(tr("About this program"));
     help_menu->addAction(help_about);
     connect(help_about, SIGNAL(triggered()), this, SLOT(onAbout()));
+}
+
+bool TransferWindow::connectTo(QString ip, int port) {
+    
+    return false;
+}
+
+void TransferWindow::listenTo(int port) {
+    
 }
 
 void TransferWindow::onConnect() {
@@ -85,8 +96,22 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
 
 // Connect code here
 void ConnectWindow::onConnect() {
+  
+    // todo: regex to check if valid IP
+    // todo: regex to check if valid Port
+    
+    QString ip = tex_ip->text();
+    QString port = tex_port->text();
+    if(parent_->connectTo(ip, port.toInt()) == true) {
+        
+    }
     
 }
+
+void ConnectWindow::setParentWindow(TransferWindow *win) {
+    parent_ = win;
+}
+
 
 ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     setGeometry(100,100,270,110);
@@ -94,6 +119,7 @@ ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     lbl_1->setGeometry(10, 10, 75, 20);
     list_port = new QLineEdit("", this);
     list_port->setGeometry(75, 10, 100, 20);
+    list_port->setValidator(new QRegExpValidator(QRegExp("[0-9]*"), this));
     list_start = new QPushButton("Listen", this);
     list_start->setGeometry(185, 10, 75, 20);
     list_start->setEnabled(false);
@@ -106,12 +132,12 @@ ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     list_file->setGeometry(65, 60, 200, 20);
     connect(list_select, SIGNAL(clicked()), this, SLOT(onSelectFile()));
     setFixedSize(270, 110);
-    
 }
 
 
 void ListenWindow::onListen() {
-    
+    QString port = list_port->text();
+    parent_->listenTo(port.toInt());
 }
 
 void ListenWindow::onSelectFile() {
@@ -121,5 +147,9 @@ void ListenWindow::onSelectFile() {
         list_start->setEnabled(true);
         list_file->setText(file_name);
     }
+}
+
+void ListenWindow::setParentWindow(TransferWindow *win) {
+    parent_ = win;
 }
 

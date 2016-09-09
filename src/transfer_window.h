@@ -4,12 +4,14 @@
 #include<QtCore>
 #include<QtGui>
 
+class TransferWindow;
 
 class ConnectWindow : public QDialog {
     Q_OBJECT
     
 public:
     ConnectWindow(QWidget *parent = 0);
+    void setParentWindow(TransferWindow *win);
     
 public slots:
     void onConnect();
@@ -18,6 +20,7 @@ private:
     QLineEdit *tex_ip, *tex_port;
     QLabel *con_status;
     QPushButton *con_start;
+    TransferWindow *parent_;
 };
 
 class ListenWindow : public QDialog {
@@ -25,6 +28,8 @@ class ListenWindow : public QDialog {
     
 public:
     ListenWindow(QWidget *parent = 0);
+    void setParentWindow(TransferWindow *win);
+    
 public slots:
     void onListen();
     void onSelectFile();
@@ -35,6 +40,7 @@ private:
     QPushButton *list_select;
     QLabel *list_status, *list_file;
     QString file_name;
+    TransferWindow *parent_;
 };
 
 
@@ -46,6 +52,10 @@ public:
     
     TransferWindow(QWidget *parent = 0);
     void createMenu();
+    
+    bool connectTo(QString ip, int port);
+    void listenTo(int port);
+    
     
 public slots:
     void onConnect();
