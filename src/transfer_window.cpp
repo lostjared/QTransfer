@@ -43,7 +43,7 @@ void TransferWindow::onAbout() {
 }
 
 ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
-    setGeometry(100, 100, 310, 200);
+    setGeometry(100, 100, 310, 75);
     QLabel *lbl_1 = new QLabel("IP: ", this);
     lbl_1->setGeometry(10, 10, 25, 25);
     tex_ip = new QLineEdit("", this);
@@ -55,11 +55,32 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     con_start = new QPushButton("Connect", this);
     con_start->setGeometry(225, 10, 75, 20);
     con_status = new QLabel("Status..", this);
-    con_status->setGeometry(10, 30, 200, 25);
+    con_status->setGeometry(10, 35, 75, 25);
     setWindowTitle("Connect to IP Address");
+    connect(con_start, SIGNAL(clicked()), this, SLOT(onConnect()));
+}
+
+// Connect code here
+void ConnectWindow::onConnect() {
     
 }
 
 ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
-    setGeometry(100,100,300,200);
+    setGeometry(100,100,270,75);
+    QLabel *lbl_1 = new QLabel("Port: ", this);
+    lbl_1->setGeometry(10, 10, 75, 20);
+    list_port = new QLineEdit("", this);
+    list_port->setGeometry(75, 10, 100, 20);
+    list_start = new QPushButton("Listen", this);
+    list_start->setGeometry(185, 10, 75, 20);
+    list_status = new QLabel("Listen Status", this);
+    list_status->setGeometry(10, 35, 280, 20);
+    setWindowTitle("Listen for Connection");
 }
+
+
+void ListenWindow::onListen() {
+    
+}
+
+
