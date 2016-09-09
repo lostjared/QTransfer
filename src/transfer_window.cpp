@@ -82,6 +82,7 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     tex_ip = new QLineEdit("", this);
     tex_ip->setGeometry(35, 10, 100, 20);
     tex_port = new QLineEdit("", this);
+    tex_port->setValidator(new QRegExpValidator(QRegExp("[0-9]*"), this));
     QLabel *lbl_2 = new QLabel("Port: ", this);
     lbl_2->setGeometry(140, 10, 25, 25);
     tex_port->setGeometry(170, 10, 50, 20);
@@ -97,10 +98,13 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
 // Connect code here
 void ConnectWindow::onConnect() {
   
-    // todo: regex to check if valid IP
-    // todo: regex to check if valid Port
-    
     QString ip = tex_ip->text();
+    QRegExp ex("(\\d{1,3}(\\.\\d{1,3}){3})");
+    if(!ex.exactMatch(ip)) {
+        QMessageBox::information(this, "Invalid", "Invalid IP address try again..\n");
+        return;
+    }
+    
     QString port = tex_port->text();
     if(parent_->connectTo(ip, port.toInt()) == true) {
         
