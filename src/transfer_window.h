@@ -72,7 +72,7 @@ public slots:
     void onConConnected();
     void onConDisconnected();
     void onConError(QAbstractSocket::SocketError se);
-    
+    void onConReadyRead();
     
 private:
     QMenu *file_menu, *help_menu;

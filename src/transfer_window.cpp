@@ -55,6 +55,7 @@ bool TransferWindow::connectTo(QString ip, int port) {
     connect(socket_, SIGNAL(connected()), this, SLOT(onConConnected()));
     connect(socket_, SIGNAL(disconnected()), this, SLOT(onConDisconnected()));
     connect(socket_, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onConError(QAbstractSocket::SocketError)));
+    connect(socket_, SIGNAL(readyRead()), this, SLOT(onConReadyRead()));
     
     con_window->con_status->setText("Connecting .... ");
     std::cout << "Connecting to: " << ip.toUtf8().data() << ":" << port << "\n";
@@ -98,6 +99,10 @@ void TransferWindow::onConError(QAbstractSocket::SocketError se) {
         con_window->con_status->setText(tr("Connection refused..\n"));
     else
         con_window->con_status->setText(tr("An error occured..\n"));
+}
+
+void TransferWindow::onConReadyRead() {
+    
 }
 
 void TransferWindow::onAbout() {
