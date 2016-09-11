@@ -26,6 +26,7 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     
     setWindowTitle(tr("QTransfer - "));
     setFixedSize(640, 200);
+    file_sending = false;
 }
 
 void TransferWindow::createMenu() {
@@ -87,6 +88,11 @@ void TransferWindow::onConConnected() {
     std::cout << "Connected..\n";
     con_window->hide();
     statusBar()->showMessage("Connected");
+    
+    const char *szTest = "GET /index.html HTTP/1.0\n\n";
+    
+    socket_->write(szTest);
+    
     // recv file
 }
 void TransferWindow::onConDisconnected() {
@@ -96,16 +102,36 @@ void TransferWindow::onConDisconnected() {
 
 }
 void TransferWindow::onConError(QAbstractSocket::SocketError se) {
-    std::cout << "Error occoured.\n";
+    if(se != QAbstractSocket::RemoteHostClosedError) std::cout << "Error occoured: " << se << ".\n";
+    QString value;
+    QTextStream stream(&value);
+    
+    stream << "An Error has occured: " << se << "\n";
+    
     if(se == QAbstractSocket::ConnectionRefusedError)
         con_window->con_status->setText(tr("Connection refused..\n"));
+    else if(se == QAbstractSocket::RemoteHostClosedError)
+        con_window->con_status->setText(tr("Remote host closed connection..\n"));
     else
-        con_window->con_status->setText(tr("An error occured..\n"));
+        con_window->con_status->setText(value);
     
     con_window->con_start->setEnabled(true);
 }
 
 void TransferWindow::onConReadyRead() {
+    std::cout << "Bytes ready..\n";
+    
+   /* QByteArray byte_arr = socket_->readAll();
+    std::cout << byte_arr.data() << "\n"; */
+    
+    char buf[1024];
+    if(file_sending == false) {
+        qint64 length = socket_->readLine(buf, sizeof(buf));
+        if(length > 0) {
+            
+            
+        }
+    }
     
 }
 

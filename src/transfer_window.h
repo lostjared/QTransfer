@@ -82,6 +82,7 @@ private:
     QLabel *file_name;
     QPushButton *file_cancel, *file_show;
     QTcpSocket *socket_;
+    bool file_sending;
 };
 
 
