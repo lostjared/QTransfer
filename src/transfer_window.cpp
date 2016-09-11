@@ -59,8 +59,8 @@ bool TransferWindow::connectTo(QString ip, int port) {
     
     con_window->con_status->setText("Connecting .... ");
     std::cout << "Connecting to: " << ip.toUtf8().data() << ":" << port << "\n";
-    socket_->connectToHost(ip, port);
     
+    socket_->connectToHost(ip, port);
     return true;
 }
 
@@ -92,6 +92,8 @@ void TransferWindow::onConConnected() {
 void TransferWindow::onConDisconnected() {
     std::cout << "Disconnected..\n";
     statusBar()->showMessage("Disconnected");
+    con_window->con_start->setEnabled(true);
+
 }
 void TransferWindow::onConError(QAbstractSocket::SocketError se) {
     std::cout << "Error occoured.\n";
@@ -99,6 +101,8 @@ void TransferWindow::onConError(QAbstractSocket::SocketError se) {
         con_window->con_status->setText(tr("Connection refused..\n"));
     else
         con_window->con_status->setText(tr("An error occured..\n"));
+    
+    con_window->con_start->setEnabled(true);
 }
 
 void TransferWindow::onConReadyRead() {
@@ -143,6 +147,8 @@ void ConnectWindow::onConnect() {
         QMessageBox::information(this, "Invalid Port", "Invalid Port Number...\n");
         return;
     }
+    
+    con_start->setEnabled(false);
     
     if(parent_->connectTo(ip, port.toInt()) == true) {
         
