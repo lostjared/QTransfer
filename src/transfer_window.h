@@ -4,6 +4,7 @@
 #include<QtCore>
 #include<QtGui>
 #include<QTcpSocket>
+#include<QTcpServer>
 
 class TransferWindow;
 
@@ -21,7 +22,7 @@ public slots:
     void onConnect();
     
 private:
-    QLineEdit *tex_ip, *tex_port;
+    QLineEdit *tex_ip, *tex_port, *tex_pass;
     QLabel *con_status;
     QPushButton *con_start;
     TransferWindow *parent_;
@@ -41,7 +42,7 @@ public slots:
     void onSelectFile();
     
 private:
-    QLineEdit *list_port;
+    QLineEdit *list_port, *list_pass;
     QPushButton *list_start;
     QPushButton *list_select;
     QLabel *list_status, *list_file;
@@ -73,6 +74,11 @@ public slots:
     void onConDisconnected();
     void onConError(QAbstractSocket::SocketError se);
     void onConReadyRead();
+    void onListConnected();
+    void onListDisconnected();
+    void onListError(QAbstractSocket::SocketError se);
+    void onListReadyRead();
+    void onNewConnection();
     
 private:
     QMenu *file_menu, *help_menu;
@@ -82,6 +88,7 @@ private:
     QLabel *file_name;
     QPushButton *file_cancel, *file_show;
     QTcpSocket *socket_;
+    QTcpServer *server_;
     bool file_sending;
 };
 

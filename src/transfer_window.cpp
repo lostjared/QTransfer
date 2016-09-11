@@ -66,7 +66,11 @@ bool TransferWindow::connectTo(QString ip, int port) {
 }
 
 void TransferWindow::listenTo(int port) {
-    
+    server_ = new QTcpServer(this);
+    connect(server_, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
+    server_->listen(QHostAddress::Any, port);
+    listen_window->list_status->setText("Waiting for connection...\n");
+    statusBar()->showMessage("Waiting for incoming connection....\n");
 }
 
 void TransferWindow::onConnect() {
@@ -88,11 +92,10 @@ void TransferWindow::onConConnected() {
     std::cout << "Connected..\n";
     con_window->hide();
     statusBar()->showMessage("Connected");
-    
-    const char *szTest = "GET /index.html HTTP/1.0\n\n";
-    
-    socket_->write(szTest);
-    
+    QString value;
+    QTextStream stream(&value);
+    stream << con_window->tex_pass->text() << "\n";
+    socket_->write(value.toUtf8().data());
     // recv file
 }
 void TransferWindow::onConDisconnected() {
@@ -135,12 +138,53 @@ void TransferWindow::onConReadyRead() {
     
 }
 
+
+
+void TransferWindow::onListConnected() {
+    
+}
+
+void TransferWindow::onListDisconnected() {
+    
+}
+
+void TransferWindow::onListError(QAbstractSocket::SocketError se) {
+    
+}
+
+void TransferWindow::onListReadyRead() {
+    char buf[1024];
+    if(file_sending == false) {
+        socket_->readLine(buf, sizeof(buf));
+        QString pw = buf;
+        
+        if(pw != listen_window->list_pass->text()+"\n") {
+            socket_->close();
+            statusBar()->showMessage("Invalid password attempt..\n");
+        } else {
+            statusBar()->showMessage("Password accepted, sending file..\n");
+        }
+    }
+}
+
+void TransferWindow::onNewConnection() {
+    
+    socket_ = server_->nextPendingConnection();
+    
+    connect(socket_, SIGNAL(connected()), this, SLOT(onListConnected()));
+    connect(socket_, SIGNAL(disconnected()), this, SLOT(onListDisconnected()));
+    connect(socket_, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onListError(QAbstractSocket::SocketError)));
+    connect(socket_, SIGNAL(readyRead()), this, SLOT(onListReadyRead()));
+    
+}
+
+
 void TransferWindow::onAbout() {
     QMessageBox::information(this, "About QTransfer", "Written by Jared Bruni in C++<br>\n<a href=\"http://lostsidedead.com\">http://lostsidedead.com</a>");
 }
 
 ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
-    setGeometry(100, 100, 310, 75);
+    setGeometry(100, 100, 310, 100);
     QLabel *lbl_1 = new QLabel("IP: ", this);
     lbl_1->setGeometry(10, 10, 25, 25);
     tex_ip = new QLineEdit("", this);
@@ -152,11 +196,15 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     tex_port->setGeometry(170, 10, 50, 20);
     con_start = new QPushButton("Connect", this);
     con_start->setGeometry(225, 10, 75, 20);
+    QLabel *lbl_3 = new QLabel("Password: ", this);
+    lbl_3->setGeometry(10, 40, 70, 20);
+    tex_pass = new QLineEdit("password", this);
+    tex_pass->setGeometry(75, 40, 100, 20);
     con_status = new QLabel("Status..", this);
-    con_status->setGeometry(10, 40, 300, 25);
+    con_status->setGeometry(10, 75, 300, 25);
     setWindowTitle("Connect to IP Address");
     connect(con_start, SIGNAL(clicked()), this, SLOT(onConnect()));
-    setFixedSize(310, 75);
+    setFixedSize(310, 100);
 }
 
 // Connect code here
@@ -174,6 +222,11 @@ void ConnectWindow::onConnect() {
         return;
     }
     
+    if(tex_pass->text().length() == 0) {
+        QMessageBox::information(this, "password required", "Password must be at least 1 character..\n");
+        return;
+    }
+    
     con_start->setEnabled(false);
     
     if(parent_->connectTo(ip, port.toInt()) == true) {
@@ -186,7 +239,7 @@ void ConnectWindow::setParentWindow(TransferWindow *win) {
 }
 
 ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
-    setGeometry(100,100,270,110);
+    setGeometry(100,100,270,130);
     QLabel *lbl_1 = new QLabel("Port: ", this);
     lbl_1->setGeometry(10, 10, 75, 20);
     list_port = new QLineEdit("", this);
@@ -202,8 +255,13 @@ ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     list_select->setGeometry(10,60,50,20);
     list_file = new QLabel("Please Select File...", this);
     list_file->setGeometry(65, 60, 200, 20);
+    QLabel *lbl_2 = new QLabel("Password: ", this);
+    lbl_2->setGeometry(10, 85, 75, 20);
+    list_pass = new QLineEdit("", this);
+    list_pass->setGeometry(85, 85, 100, 20);
     connect(list_select, SIGNAL(clicked()), this, SLOT(onSelectFile()));
-    setFixedSize(270, 110);
+    connect(list_start, SIGNAL(clicked()), this, SLOT(onListen()));
+    setFixedSize(270, 130);
 }
 
 
@@ -213,6 +271,12 @@ void ListenWindow::onListen() {
         QMessageBox::information(this, "Invalid Port", "Invalid Port Number...\n");
         return;
     }
+    
+    if(list_pass->text().length() == 0) {
+        QMessageBox::information(this, "Required Pass", "Password must be atleast 1 character..\n");
+        return;
+    }
+    
     parent_->listenTo(port.toInt());
 }
 
