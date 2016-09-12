@@ -21,12 +21,16 @@ public:
     
 public slots:
     void onConnect();
+    void onSelectDir();
     
 private:
     QLineEdit *tex_ip, *tex_port, *tex_pass;
     QLabel *con_status;
     QPushButton *con_start;
     TransferWindow *parent_;
+    QPushButton *con_path;
+    QLabel *con_pathf;
+    QString file_dir;
 };
 
 class ListenWindow : public QDialog {

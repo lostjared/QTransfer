@@ -133,11 +133,11 @@ void TransferWindow::onConReadyRead() {
             std::string str = buf;
             std::string filename = str.substr(0, str.find(":"));
             std::string slen = str.substr(str.find(":")+1, str.length());
-            
+            file_name->setText(filename.c_str());
             unsigned long len = atol(slen.c_str());
             transfer_bar->setRange(0, len);
             
-            std::string full_filename = "/Users/jared/Downloads/" + filename;
+            std::string full_filename = std::string(con_window->file_dir.toUtf8().data()) + "/" + filename;
             outfile.open(full_filename, std::ios::out | std::ios::binary);
             if(!outfile.is_open()) {
                 QMessageBox::warning(this, "Error could not open file", "Couldn't open file");
@@ -161,8 +161,16 @@ void TransferWindow::onConReadyRead() {
                 if(it == 0 && !socket_->waitForReadyRead())
                     break;
                 
+                static unsigned int counter = 0;
+                
+                ++counter;
+                if((counter%1000) == 0) {
+                    QApplication::processEvents();
+                }
+                
             }
             
+            transfer_bar->setValue(len);
             outfile.close();
             socket_->close();
         }
@@ -212,6 +220,9 @@ void TransferWindow::onListReadyRead() {
             else
                 offset ++;
             
+            
+            statusBar()->showMessage("Sending file...");
+            
             fn = fname.substr(offset, fname.length());
             
             file.seekg(0, std::ios::end);
@@ -221,6 +232,9 @@ void TransferWindow::onListReadyRead() {
             
             std::ostringstream stream;
             stream << fn << ":" << len << "\n";
+            
+            file_name->setText(fn.c_str());
+            
             std::cout << stream.str() << "\n";
             
             transfer_bar->setRange(0, len);
@@ -238,10 +252,20 @@ void TransferWindow::onListReadyRead() {
                 pos += bytes_read;
                 transfer_bar->setValue(pos);
                 socket_->write(buf, bytes_read);
+                
+                static unsigned int counter = 0;
+               
+                ++counter;
+                if((counter%1000) == 0) {
+                    QApplication::processEvents();
+                }
             }
+            
+            transfer_bar->setValue(len);
             
             file.close();
             socket_->close();
+            statusBar()->showMessage("File set..");
         }
     }
 }
@@ -263,7 +287,7 @@ void TransferWindow::onAbout() {
 }
 
 ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
-    setGeometry(100, 100, 310, 100);
+    setGeometry(100, 100, 310, 150);
     QLabel *lbl_1 = new QLabel("IP: ", this);
     lbl_1->setGeometry(10, 10, 25, 25);
     tex_ip = new QLineEdit("", this);
@@ -283,7 +307,12 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     con_status->setGeometry(10, 75, 300, 25);
     setWindowTitle("Connect to IP Address");
     connect(con_start, SIGNAL(clicked()), this, SLOT(onConnect()));
-    setFixedSize(310, 100);
+    setFixedSize(310, 150);
+    con_path = new QPushButton("[Select Dir]", this);
+    con_path->setGeometry(10, 100, 120, 20);
+    con_pathf = new QLabel(" Directory ", this);
+    con_pathf->setGeometry(130, 100, 200, 20);
+    connect(con_path, SIGNAL(clicked()), this, SLOT(onSelectDir()));
 }
 
 // Connect code here
@@ -306,9 +335,26 @@ void ConnectWindow::onConnect() {
         return;
     }
     
+    if(file_dir.length() == 0) {
+        QMessageBox::information(this, "Requires dir path", "You need to provide the directory to save to..");
+        return;
+    }
+    
+    
     con_start->setEnabled(false);
     
     if(parent_->connectTo(ip, port.toInt()) == true) {
+        
+    }
+}
+
+void ConnectWindow::onSelectDir() {
+ 
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),"/home",                                        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    
+    if(dir != "") {
+        file_dir = dir;
+        con_pathf->setText(dir);
         
     }
 }
