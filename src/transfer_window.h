@@ -5,6 +5,7 @@
 #include<QtGui>
 #include<QTcpSocket>
 #include<QTcpServer>
+#include<fstream>
 
 class TransferWindow;
 
@@ -90,6 +91,7 @@ private:
     QTcpSocket *socket_;
     QTcpServer *server_;
     bool file_sending;
+    std::fstream outfile;
 };
 
 

@@ -1,5 +1,7 @@
 #include "transfer_window.h"
 #include<iostream>
+#include<string>
+#include<sstream>
 
 TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     setGeometry(100, 100, 640, 200);
@@ -124,15 +126,45 @@ void TransferWindow::onConError(QAbstractSocket::SocketError se) {
 void TransferWindow::onConReadyRead() {
     std::cout << "Bytes ready..\n";
     
-   /* QByteArray byte_arr = socket_->readAll();
-    std::cout << byte_arr.data() << "\n"; */
-    
     char buf[1024];
     if(file_sending == false) {
         qint64 length = socket_->readLine(buf, sizeof(buf));
         if(length > 0) {
+            std::string str = buf;
+            std::string filename = str.substr(0, str.find(":"));
+            std::string slen = str.substr(str.find(":")+1, str.length());
+            
+            unsigned long len = atol(slen.c_str());
+            transfer_bar->setRange(0, len);
+            
+            std::string full_filename = "/Users/jared/Downloads/" + filename;
+            outfile.open(full_filename, std::ios::out | std::ios::binary);
+            if(!outfile.is_open()) {
+                QMessageBox::warning(this, "Error could not open file", "Couldn't open file");
+                socket_->close();
+                return;
+            }
+            
+            unsigned long pos = 0;
+            unsigned it = 0;
             
             
+            while(pos < len) {
+                char buf[4096];
+                it = socket_->read(buf, 4096);
+                outfile.write(buf, it);
+                transfer_bar->setValue(pos);
+                pos += it;
+                
+                transfer_bar->setValue(pos);
+                
+                if(it == 0 && !socket_->waitForReadyRead())
+                    break;
+                
+            }
+            
+            outfile.close();
+            socket_->close();
         }
     }
     
@@ -141,15 +173,18 @@ void TransferWindow::onConReadyRead() {
 
 
 void TransferWindow::onListConnected() {
-    
+    std::cout << "Connected\n";
+    listen_window->list_start->setEnabled(false);
 }
 
 void TransferWindow::onListDisconnected() {
-    
+    std::cout << "Disconnected\n";
+    statusBar()->showMessage("Disconnected");
+    listen_window->list_start->setEnabled(true);
 }
 
 void TransferWindow::onListError(QAbstractSocket::SocketError se) {
-    
+    std::cout << "An Error has occured.\n";
 }
 
 void TransferWindow::onListReadyRead() {
@@ -157,12 +192,56 @@ void TransferWindow::onListReadyRead() {
     if(file_sending == false) {
         socket_->readLine(buf, sizeof(buf));
         QString pw = buf;
-        
         if(pw != listen_window->list_pass->text()+"\n") {
             socket_->close();
             statusBar()->showMessage("Invalid password attempt..\n");
         } else {
             statusBar()->showMessage("Password accepted, sending file..\n");
+            std::fstream file;
+            file.open(listen_window->file_name.toUtf8().data(), std::ios::in|std::ios::binary);
+            if(!file.is_open()) {
+                QMessageBox::warning(this, "Error", "Could not find file.");
+                return;
+            }
+            std::string fname = listen_window->file_name.toUtf8().data();
+            std::string fn, fc;
+            int offset = 0;
+            offset = fname.rfind("/");
+            if(offset == std::string::npos)
+                offset = 0;
+            else
+                offset ++;
+            
+            fn = fname.substr(offset, fname.length());
+            
+            file.seekg(0, std::ios::end);
+            unsigned long len = file.tellg();
+            file.seekg(0, std::ios::beg);
+            unsigned long pos = 0;
+            
+            std::ostringstream stream;
+            stream << fn << ":" << len << "\n";
+            std::cout << stream.str() << "\n";
+            
+            transfer_bar->setRange(0, len);
+            
+            char buffer[1024];
+            snprintf(buffer, 1023, "%s", stream.str().c_str());
+            
+            socket_->write(buffer, qstrlen(buffer));
+            
+            while(!file.eof()) {
+                char buf[4096];
+                file.read(buf, 4096);
+                int bytes_read=file.gcount();
+                if(bytes_read <= 0) break;
+                pos += bytes_read;
+                transfer_bar->setValue(pos);
+                socket_->write(buf, bytes_read);
+            }
+            
+            file.close();
+            socket_->close();
         }
     }
 }
