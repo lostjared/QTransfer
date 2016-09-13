@@ -199,6 +199,7 @@ void TransferWindow::onListConnected() {
     std::cout << "Connected\n";
     listen_window->list_start->setEnabled(false);
     con_window->con_start->setEnabled(false);
+    listen_window->hide();
 }
 
 void TransferWindow::onListDisconnected() {
@@ -328,6 +329,7 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     con_pathf = new QLabel(" Directory ", this);
     con_pathf->setGeometry(130, 100, 200, 20);
     connect(con_path, SIGNAL(clicked()), this, SLOT(onSelectDir()));
+    con_start->setEnabled(false);
 }
 
 // Connect code here
@@ -370,6 +372,7 @@ void ConnectWindow::onSelectDir() {
     if(dir != "") {
         file_dir = dir;
         con_pathf->setText(dir);
+        con_start->setEnabled(true);
         
     }
 }

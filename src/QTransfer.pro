@@ -7,7 +7,7 @@ TARGET =
 DEPENDPATH += .
 INCLUDEPATH += .
 
-QT += network
+QT += network core gui
 
 QMAKE_CXXFLAGS += -std=c++11
 
