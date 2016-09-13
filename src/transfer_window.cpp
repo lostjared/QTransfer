@@ -2,6 +2,10 @@
 #include<iostream>
 #include<string>
 #include<sstream>
+#include<cstdio>
+#include<cstdlib>
+#include<cstring>
+
 
 TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     setGeometry(100, 100, 640, 200);
