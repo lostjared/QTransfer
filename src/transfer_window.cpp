@@ -181,7 +181,7 @@ void TransferWindow::onConReadyRead() {
                 static unsigned int counter = 0;
                 
                 ++counter;
-                if((counter%1000) == 0) {
+                if((counter%3000) == 0) {
                     QApplication::processEvents();
                 }
                 
@@ -195,7 +195,6 @@ void TransferWindow::onConReadyRead() {
     }
     
 }
-
 
 
 void TransferWindow::onListConnected() {
@@ -280,25 +279,27 @@ void TransferWindow::onListReadyRead() {
                 int bytes_read=file.gcount();
                 if(bytes_read <= 0) break;
                 pos += bytes_read;
-                transfer_bar->setValue(pos);
-                list_socket->write(buf, bytes_read);
+                 list_socket->write(buf, bytes_read);
                 
                 static unsigned int counter = 0;
                
                 ++counter;
-                if((counter%1000) == 0) {
+                if((counter%3000) == 0) {
                     QApplication::processEvents();
                 }
             }
             
-            transfer_bar->setValue(len);
             
             file.close();
             list_socket->close();
-            statusBar()->showMessage("File set..");
             file_show->setEnabled(true);
         }
     }
+}
+
+void TransferWindow::onListBytesWritten(qint64 bytes) {
+    unsigned long value = transfer_bar->value()+bytes;
+    transfer_bar->setValue(value);
 }
 
 void TransferWindow::onNewConnection() {
@@ -309,6 +310,7 @@ void TransferWindow::onNewConnection() {
     connect(list_socket, SIGNAL(disconnected()), this, SLOT(onListDisconnected()));
     connect(list_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onListError(QAbstractSocket::SocketError)));
     connect(list_socket, SIGNAL(readyRead()), this, SLOT(onListReadyRead()));
+    connect(list_socket, SIGNAL(bytesWritten(qint64)), this, SLOT(onListBytesWritten(qint64)));
 }
 
 

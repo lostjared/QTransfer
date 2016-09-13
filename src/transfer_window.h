@@ -83,6 +83,7 @@ public slots:
     void onListDisconnected();
     void onListError(QAbstractSocket::SocketError se);
     void onListReadyRead();
+    void onListBytesWritten(qint64 bytes);
     void onNewConnection();
     
 private:
