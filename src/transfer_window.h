@@ -92,7 +92,7 @@ private:
     QProgressBar *transfer_bar;
     QLabel *file_name;
     QPushButton *file_cancel, *file_show;
-    QTcpSocket *socket_;
+    QTcpSocket *socket_, *list_socket;
     QTcpServer *server_;
     bool file_sending;
     std::fstream outfile;

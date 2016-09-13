@@ -33,6 +33,8 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle(tr("QTransfer - "));
     setFixedSize(640, 200);
     file_sending = false;
+    server_ = NULL;
+    socket_ = NULL;
 }
 
 void TransferWindow::createMenu() {
@@ -57,6 +59,8 @@ void TransferWindow::createMenu() {
 
 bool TransferWindow::connectTo(QString ip, int port) {
     
+    if(socket_ != NULL) delete socket_;
+    
     socket_ = new QTcpSocket(this);
     
     connect(socket_, SIGNAL(connected()), this, SLOT(onConConnected()));
@@ -72,6 +76,7 @@ bool TransferWindow::connectTo(QString ip, int port) {
 }
 
 void TransferWindow::listenTo(int port) {
+    if(server_ != NULL) delete server_;
     server_ = new QTcpServer(this);
     connect(server_, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
     server_->listen(QHostAddress::Any, port);
@@ -97,6 +102,11 @@ void TransferWindow::onShowInFinder() {
 void TransferWindow::onConConnected() {
     std::cout << "Connected..\n";
     con_window->hide();
+    
+    con_window->con_start->setEnabled(false);
+    listen_window->list_start->setEnabled(false);
+
+    
     statusBar()->showMessage("Connected");
     QString value;
     QTextStream stream(&value);
@@ -108,6 +118,7 @@ void TransferWindow::onConDisconnected() {
     std::cout << "Disconnected..\n";
     statusBar()->showMessage("Disconnected");
     con_window->con_start->setEnabled(true);
+    listen_window->list_start->setEnabled(true);
 
 }
 void TransferWindow::onConError(QAbstractSocket::SocketError se) {
@@ -187,12 +198,14 @@ void TransferWindow::onConReadyRead() {
 void TransferWindow::onListConnected() {
     std::cout << "Connected\n";
     listen_window->list_start->setEnabled(false);
+    con_window->con_start->setEnabled(false);
 }
 
 void TransferWindow::onListDisconnected() {
     std::cout << "Disconnected\n";
     statusBar()->showMessage("Disconnected");
     listen_window->list_start->setEnabled(true);
+    con_window->con_start->setEnabled(true);
 }
 
 void TransferWindow::onListError(QAbstractSocket::SocketError /*se*/) {
@@ -202,10 +215,10 @@ void TransferWindow::onListError(QAbstractSocket::SocketError /*se*/) {
 void TransferWindow::onListReadyRead() {
     char buf[1024];
     if(file_sending == false) {
-        socket_->readLine(buf, sizeof(buf));
+        list_socket->readLine(buf, sizeof(buf));
         QString pw = buf;
         if(pw != listen_window->list_pass->text()+"\n") {
-            socket_->close();
+            list_socket->close();
             statusBar()->showMessage("Invalid password attempt..\n");
         } else {
             statusBar()->showMessage("Password accepted, sending file..\n");
@@ -246,7 +259,7 @@ void TransferWindow::onListReadyRead() {
             char buffer[1024];
             snprintf(buffer, 1023, "%s", stream.str().c_str());
             
-            socket_->write(buffer, qstrlen(buffer));
+            list_socket->write(buffer, qstrlen(buffer));
             
             while(!file.eof()) {
                 char buf[4096];
@@ -255,7 +268,7 @@ void TransferWindow::onListReadyRead() {
                 if(bytes_read <= 0) break;
                 pos += bytes_read;
                 transfer_bar->setValue(pos);
-                socket_->write(buf, bytes_read);
+                list_socket->write(buf, bytes_read);
                 
                 static unsigned int counter = 0;
                
@@ -268,21 +281,19 @@ void TransferWindow::onListReadyRead() {
             transfer_bar->setValue(len);
             
             file.close();
-            socket_->close();
+            list_socket->close();
             statusBar()->showMessage("File set..");
         }
     }
 }
 
 void TransferWindow::onNewConnection() {
-    
-    socket_ = server_->nextPendingConnection();
-    
-    connect(socket_, SIGNAL(connected()), this, SLOT(onListConnected()));
-    connect(socket_, SIGNAL(disconnected()), this, SLOT(onListDisconnected()));
-    connect(socket_, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onListError(QAbstractSocket::SocketError)));
-    connect(socket_, SIGNAL(readyRead()), this, SLOT(onListReadyRead()));
-    
+    list_socket = server_->nextPendingConnection();
+    server_->close();
+    connect(list_socket, SIGNAL(connected()), this, SLOT(onListConnected()));
+    connect(list_socket, SIGNAL(disconnected()), this, SLOT(onListDisconnected()));
+    connect(list_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onListError(QAbstractSocket::SocketError)));
+    connect(list_socket, SIGNAL(readyRead()), this, SLOT(onListReadyRead()));
 }
 
 
