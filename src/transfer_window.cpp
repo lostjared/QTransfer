@@ -8,7 +8,7 @@
 
 
 TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
-    setGeometry(100, 100, 640, 200);
+    setGeometry(100, 100, 640, 170);
     createMenu();
     statusBar()->showMessage(tr("Welcome to QTransfer"));
     con_window = new ConnectWindow(this);
@@ -23,7 +23,6 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     
     file_cancel = new QPushButton("Cancel", this);
     file_cancel->setGeometry(520, 85, 100, 20);
-    file_cancel->setEnabled(false);
     file_show = new QPushButton("Show", this);
     file_show->setGeometry(410, 85, 100, 20);
     file_show->setEnabled(false);
@@ -31,7 +30,7 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     connect(file_show, SIGNAL(clicked()), this, SLOT(onShowInFinder()));
     
     setWindowTitle(tr("QTransfer - "));
-    setFixedSize(640, 200);
+    setFixedSize(640, 170);
     file_sending = false;
     server_ = NULL;
     socket_ = NULL;
@@ -93,10 +92,10 @@ void TransferWindow::onListen() {
 }
 
 void TransferWindow::onCancel() {
-    
+    QApplication::exit(0);
 }
 void TransferWindow::onShowInFinder() {
-    
+    QDesktopServices::openUrl(QUrl::fromLocalFile(ex_file_path));
 }
 
 void TransferWindow::onConConnected() {
@@ -106,6 +105,7 @@ void TransferWindow::onConConnected() {
     con_window->con_start->setEnabled(false);
     listen_window->list_start->setEnabled(false);
 
+    file_show->setEnabled(false);
     
     statusBar()->showMessage("Connected");
     QString value;
@@ -155,6 +155,7 @@ void TransferWindow::onConReadyRead() {
             
             std::string full_filename = std::string(con_window->file_dir.toUtf8().data()) + "/" + filename;
             outfile.open(full_filename, std::ios::out | std::ios::binary);
+            ex_file_path = con_window->file_dir;
             if(!outfile.is_open()) {
                 QMessageBox::warning(this, "Error could not open file", "Couldn't open file");
                 socket_->close();
@@ -189,6 +190,7 @@ void TransferWindow::onConReadyRead() {
             transfer_bar->setValue(len);
             outfile.close();
             socket_->close();
+            file_show->setEnabled(true);
         }
     }
     
@@ -201,6 +203,7 @@ void TransferWindow::onListConnected() {
     listen_window->list_start->setEnabled(false);
     con_window->con_start->setEnabled(false);
     listen_window->hide();
+    file_show->setEnabled(false);
 }
 
 void TransferWindow::onListDisconnected() {
@@ -230,6 +233,10 @@ void TransferWindow::onListReadyRead() {
             statusBar()->showMessage("Password accepted, sending file..\n");
             std::fstream file;
             file.open(listen_window->file_name.toUtf8().data(), std::ios::in|std::ios::binary);
+            std::string _filename = listen_window->file_name.toUtf8().data();
+            _filename = _filename.substr(0, _filename.rfind("/"));
+            ex_file_path = _filename.c_str();
+            
             if(!file.is_open()) {
                 QMessageBox::warning(this, "Error", "Could not find file.");
                 return;
@@ -289,6 +296,7 @@ void TransferWindow::onListReadyRead() {
             file.close();
             list_socket->close();
             statusBar()->showMessage("File set..");
+            file_show->setEnabled(true);
         }
     }
 }

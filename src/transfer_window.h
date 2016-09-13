@@ -96,6 +96,7 @@ private:
     QTcpServer *server_;
     bool file_sending;
     std::fstream outfile;
+    QString ex_file_path;
 };
 
 
