@@ -195,7 +195,7 @@ void TransferWindow::onListDisconnected() {
     listen_window->list_start->setEnabled(true);
 }
 
-void TransferWindow::onListError(QAbstractSocket::SocketError se) {
+void TransferWindow::onListError(QAbstractSocket::SocketError /*se*/) {
     std::cout << "An Error has occured.\n";
 }
 
@@ -217,7 +217,7 @@ void TransferWindow::onListReadyRead() {
             }
             std::string fname = listen_window->file_name.toUtf8().data();
             std::string fn, fc;
-            int offset = 0;
+            unsigned long offset = 0;
             offset = fname.rfind("/");
             if(offset == std::string::npos)
                 offset = 0;
