@@ -17,15 +17,15 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     listen_window->setParentWindow(this);
     
     file_name = new QLabel(tr("File name"), this);
-    file_name->setGeometry(10, 10, 200, 20);
+    file_name->setGeometry(10, 25, 200, 20);
     transfer_bar = new QProgressBar(this);
-    transfer_bar->setGeometry(10, 35, 620, 20);
+    transfer_bar->setGeometry(10, 55, 620, 20);
     
     file_cancel = new QPushButton("Cancel", this);
-    file_cancel->setGeometry(520, 55, 100, 20);
+    file_cancel->setGeometry(520, 85, 100, 20);
     file_cancel->setEnabled(false);
     file_show = new QPushButton("Show", this);
-    file_show->setGeometry(410, 55, 100, 20);
+    file_show->setGeometry(410, 85, 100, 20);
     file_show->setEnabled(false);
     connect(file_cancel, SIGNAL(clicked()), this, SLOT(onCancel()));
     connect(file_show, SIGNAL(clicked()), this, SLOT(onShowInFinder()));
