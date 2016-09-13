@@ -136,6 +136,7 @@ void TransferWindow::onConError(QAbstractSocket::SocketError se) {
         con_window->con_status->setText(value);
     
     con_window->con_start->setEnabled(true);
+    listen_window->list_start->setEnabled(true);
 }
 
 void TransferWindow::onConReadyRead() {
@@ -207,10 +208,14 @@ void TransferWindow::onListDisconnected() {
     statusBar()->showMessage("Disconnected");
     listen_window->list_start->setEnabled(true);
     con_window->con_start->setEnabled(true);
+    
 }
 
 void TransferWindow::onListError(QAbstractSocket::SocketError /*se*/) {
     std::cout << "An Error has occured.\n";
+    con_window->con_start->setEnabled(true);
+    listen_window->list_start->setEnabled(true);
+    
 }
 
 void TransferWindow::onListReadyRead() {
@@ -291,6 +296,7 @@ void TransferWindow::onListReadyRead() {
 void TransferWindow::onNewConnection() {
     list_socket = server_->nextPendingConnection();
     server_->close();
+    listen_window->hide();
     connect(list_socket, SIGNAL(connected()), this, SLOT(onListConnected()));
     connect(list_socket, SIGNAL(disconnected()), this, SLOT(onListDisconnected()));
     connect(list_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onListError(QAbstractSocket::SocketError)));
@@ -329,7 +335,6 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     con_pathf = new QLabel(" Directory ", this);
     con_pathf->setGeometry(130, 100, 200, 20);
     connect(con_path, SIGNAL(clicked()), this, SLOT(onSelectDir()));
-    con_start->setEnabled(false);
 }
 
 // Connect code here
@@ -357,9 +362,6 @@ void ConnectWindow::onConnect() {
         return;
     }
     
-    
-    con_start->setEnabled(false);
-    
     if(parent_->connectTo(ip, port.toInt()) == true) {
         
     }
@@ -372,8 +374,6 @@ void ConnectWindow::onSelectDir() {
     if(dir != "") {
         file_dir = dir;
         con_pathf->setText(dir);
-        con_start->setEnabled(true);
-        
     }
 }
 
@@ -390,7 +390,6 @@ ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     list_port->setValidator(new QRegExpValidator(QRegExp("[0-9]*"), this));
     list_start = new QPushButton("Listen", this);
     list_start->setGeometry(185, 10, 75, 20);
-    list_start->setEnabled(false);
     list_status = new QLabel("Listen Status", this);
     list_status->setGeometry(10, 35, 280, 20);
     setWindowTitle("Listen for Connection");
@@ -420,6 +419,11 @@ void ListenWindow::onListen() {
         return;
     }
     
+    if(file_name.length() == 0) {
+        QMessageBox::information(this, "Required File", "Please Select a File to Transfer");
+        return;
+    }
+    
     parent_->listenTo(port.toInt());
 }
 
@@ -427,7 +431,6 @@ void ListenWindow::onSelectFile() {
     QString input_file = QFileDialog::getOpenFileName(this, "Select a File", "", "");
     if(input_file != "") {
         file_name = input_file;
-        list_start->setEnabled(true);
         list_file->setText(file_name);
     }
 }
