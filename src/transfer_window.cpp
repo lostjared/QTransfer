@@ -174,6 +174,7 @@ void TransferWindow::onConReadyRead() {
             std::string slen = str.substr(col_pos+1, str.length());
             file_name->setText(filename.c_str());
             unsigned long len = atol(slen.c_str());
+            file_len = len;
             
             if(len <= 0) {
                 QMessageBox::warning(this, tr("Invalid File Length."), tr("Invalid File Length"));
@@ -201,7 +202,9 @@ void TransferWindow::onConReadyRead() {
                 transfer_bar->setValue(pos);
                 pos += it;
                 
-                transfer_bar->setValue(pos);
+                
+                double val = pos, size = len, answer = (val/size)*100;
+                transfer_bar->setValue(static_cast<int>(answer));
                 
                 if(it == 0 && !socket_->waitForReadyRead())
                     break;
@@ -294,6 +297,7 @@ void TransferWindow::onListReadyRead() {
             
             file.seekg(0, std::ios::end);
             unsigned long len = file.tellg();
+            file_len = len;
             file.seekg(0, std::ios::beg);
             unsigned long pos = 0;
             
@@ -304,7 +308,7 @@ void TransferWindow::onListReadyRead() {
             
             std::cout << stream.str() << "\n";
             
-            transfer_bar->setRange(0, len);
+            transfer_bar->setRange(0, 100);
             
             char buffer[1024];
             snprintf(buffer, 1023, "%s", stream.str().c_str());
@@ -335,13 +339,14 @@ void TransferWindow::onListReadyRead() {
 }
 
 void TransferWindow::onListBytesWritten(qint64 bytes) {
-    	unsigned long value = transfer_bar->value()+(bytes/25);
-    	transfer_bar->setValue(value);
+    unsigned long value = transfer_bar->value()+(bytes);
     
-    if(value >= static_cast<unsigned long>(transfer_bar->maximum())) {
+    double val = value, size = file_len, answer = (val/size)*100;
+    transfer_bar->setValue(static_cast<int>(answer));
+    
+    if(answer >= 100) {
         QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
      }
-    
 }
 
 void TransferWindow::onNewConnection() {

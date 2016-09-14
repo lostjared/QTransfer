@@ -98,6 +98,7 @@ private:
     bool file_sending;
     std::fstream outfile;
     QString ex_file_path;
+    unsigned long file_len;
 };
 
 
