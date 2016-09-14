@@ -34,6 +34,7 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     file_sending = false;
     server_ = NULL;
     socket_ = NULL;
+    file_bytes = file_len = 0;
 }
 
 void TransferWindow::createMenu() {
@@ -341,7 +342,11 @@ void TransferWindow::onListReadyRead() {
 void TransferWindow::onListBytesWritten(qint64 bytes) {
     file_bytes += bytes;
     double val = file_bytes, size = file_len, answer = (val/size)*100;
+    
+    std::cout << val << ":" << file_len << " answer: " << answer << "\n";
+    
     transfer_bar->setValue(static_cast<int>(answer));
+    
     if(answer >= 100) {
         QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
      }
