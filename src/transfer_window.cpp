@@ -179,7 +179,7 @@ void TransferWindow::onConReadyRead() {
                 QMessageBox::warning(this, tr("Invalid File Length."), tr("Invalid File Length"));
             }
             
-            transfer_bar->setRange(0, len);
+            transfer_bar->setRange(0, len/25);
             
             std::string full_filename = std::string(con_window->file_dir.toUtf8().data()) + "/" + filename;
             outfile.open(full_filename, std::ios::out | std::ios::binary);
@@ -201,7 +201,7 @@ void TransferWindow::onConReadyRead() {
                 transfer_bar->setValue(pos);
                 pos += it;
                 
-                transfer_bar->setValue(pos);
+                transfer_bar->setValue(pos/25);
                 
                 if(it == 0 && !socket_->waitForReadyRead())
                     break;
@@ -304,14 +304,12 @@ void TransferWindow::onListReadyRead() {
             
             std::cout << stream.str() << "\n";
             
-            transfer_bar->setRange(0, len);
+            transfer_bar->setRange(0, len/25);
             
             char buffer[1024];
             snprintf(buffer, 1023, "%s", stream.str().c_str());
             
             list_socket->write(buffer, qstrlen(buffer));
-            
-            file_sending = true;
             
             while(!file.eof()) {
                 char buf[4096];
@@ -329,23 +327,21 @@ void TransferWindow::onListReadyRead() {
                 }
             }
 
-            file_sending = false;
             file.close();
             list_socket->close();
             file_show->setEnabled(true);
-            
-            if(pos >= len) {
-                QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
-            }
         }
     }
 }
 
 void TransferWindow::onListBytesWritten(qint64 bytes) {
-    if(file_sending == true) {
-    	unsigned long value = transfer_bar->value()+bytes;
+    	unsigned long value = transfer_bar->value()+(bytes/25);
     	transfer_bar->setValue(value);
-    }
+    
+    if(value >= static_cast<unsigned long>(transfer_bar->maximum())) {
+        QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
+     }
+    
 }
 
 void TransferWindow::onNewConnection() {
