@@ -342,11 +342,7 @@ void TransferWindow::onListReadyRead() {
 void TransferWindow::onListBytesWritten(qint64 bytes) {
     file_bytes += bytes;
     double val = file_bytes, size = file_len, answer = (val/size)*100;
-    
-    std::cout << val << ":" << file_len << " answer: " << answer << "\n";
-    
     transfer_bar->setValue(static_cast<int>(answer));
-    
     if(answer >= 100) {
         QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
      }
