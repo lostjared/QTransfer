@@ -309,7 +309,7 @@ void TransferWindow::onListReadyRead() {
             std::cout << stream.str() << "\n";
             
             transfer_bar->setRange(0, 100);
-            
+            file_bytes = 0;
             char buffer[1024];
             snprintf(buffer, 1023, "%s", stream.str().c_str());
             
@@ -339,11 +339,9 @@ void TransferWindow::onListReadyRead() {
 }
 
 void TransferWindow::onListBytesWritten(qint64 bytes) {
-    unsigned long value = transfer_bar->value()+(bytes);
-    
-    double val = value, size = file_len, answer = (val/size)*100;
+    file_bytes += bytes;
+    double val = file_bytes, size = file_len, answer = (val/size)*100;
     transfer_bar->setValue(static_cast<int>(answer));
-    
     if(answer >= 100) {
         QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
      }
