@@ -180,7 +180,7 @@ void TransferWindow::onConReadyRead() {
                 QMessageBox::warning(this, tr("Invalid File Length."), tr("Invalid File Length"));
             }
             
-            transfer_bar->setRange(0, len);
+            transfer_bar->setRange(0, 100);
             
             std::string full_filename = std::string(con_window->file_dir.toUtf8().data()) + "/" + filename;
             outfile.open(full_filename, std::ios::out | std::ios::binary);
