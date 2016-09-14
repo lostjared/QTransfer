@@ -179,7 +179,7 @@ void TransferWindow::onConReadyRead() {
                 QMessageBox::warning(this, tr("Invalid File Length."), tr("Invalid File Length"));
             }
             
-            transfer_bar->setRange(0, len/25);
+            transfer_bar->setRange(0, len);
             
             std::string full_filename = std::string(con_window->file_dir.toUtf8().data()) + "/" + filename;
             outfile.open(full_filename, std::ios::out | std::ios::binary);
@@ -201,7 +201,7 @@ void TransferWindow::onConReadyRead() {
                 transfer_bar->setValue(pos);
                 pos += it;
                 
-                transfer_bar->setValue(pos/25);
+                transfer_bar->setValue(pos);
                 
                 if(it == 0 && !socket_->waitForReadyRead())
                     break;
@@ -304,7 +304,7 @@ void TransferWindow::onListReadyRead() {
             
             std::cout << stream.str() << "\n";
             
-            transfer_bar->setRange(0, len/25);
+            transfer_bar->setRange(0, len);
             
             char buffer[1024];
             snprintf(buffer, 1023, "%s", stream.str().c_str());
