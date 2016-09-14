@@ -149,24 +149,38 @@ void TransferWindow::onConReadyRead() {
             std::string str = buf;
             
             if(str=="incorrect\n") {
-                statusBar()->showMessage("Incorrect Password");
+                statusBar()->showMessage(tr("Incorrect Password"));
                 socket_->close();
-                QMessageBox::information(this, "Invalid Password", "The password is incorrect. Try again.\n");
+                QMessageBox::information(this, tr("Invalid Password"), tr("The password is incorrect. Try again.\n"));
                 transfer_bar->setValue(0);
                 return;
             }
+    
+            unsigned long col_pos = str.find(":");
+            if(col_pos == std::string::npos) {
+                socket_->close();
+                QMessageBox::warning(this, tr("Invalid host"), tr("Invalid host..\n"));
+                con_window->show();
+                return;
+            }
             
-            std::string filename = str.substr(0, str.find(":"));
-            std::string slen = str.substr(str.find(":")+1, str.length());
+            std::string filename = str.substr(0, col_pos);
+            
+            std::string slen = str.substr(col_pos+1, str.length());
             file_name->setText(filename.c_str());
             unsigned long len = atol(slen.c_str());
+            
+            if(len <= 0) {
+                QMessageBox::warning(this, tr("Invalid File Length."), tr("Invalid File Length"));
+            }
+            
             transfer_bar->setRange(0, len);
             
             std::string full_filename = std::string(con_window->file_dir.toUtf8().data()) + "/" + filename;
             outfile.open(full_filename, std::ios::out | std::ios::binary);
             ex_file_path = con_window->file_dir;
             if(!outfile.is_open()) {
-                QMessageBox::warning(this, "Error could not open file", "Couldn't open file");
+                QMessageBox::warning(this, tr("Error could not open file"), tr("Couldn't open file"));
                 socket_->close();
                 return;
             }
@@ -201,7 +215,7 @@ void TransferWindow::onConReadyRead() {
             file_show->setEnabled(true);
             
             if(pos >= len) {
-            	QMessageBox::information(this, "File Sent.", "Transfer Complete!");
+            	QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
             }
         }
     }
@@ -241,12 +255,12 @@ void TransferWindow::onListReadyRead() {
         if(pw != listen_window->list_pass->text()+"\n") {
             list_socket->write("incorrect\n");
             list_socket->close();
-            statusBar()->showMessage("Invalid password attempt..\n");
+            statusBar()->showMessage(tr("Invalid password attempt..\n"));
             transfer_bar->setValue(0);
             file_sending = false;
             return;
         } else {
-            statusBar()->showMessage("Password accepted, sending file..\n");
+            statusBar()->showMessage(tr("Password accepted, sending file..\n"));
             std::fstream file;
             file.open(listen_window->file_name.toUtf8().data(), std::ios::in|std::ios::binary);
             std::string _filename = listen_window->file_name.toUtf8().data();
@@ -254,7 +268,7 @@ void TransferWindow::onListReadyRead() {
             ex_file_path = _filename.c_str();
             
             if(!file.is_open()) {
-                QMessageBox::warning(this, "Error", "Could not find file.");
+                QMessageBox::warning(this, tr("Error"), tr("Could not find file."));
                 return;
             }
             std::string fname = listen_window->file_name.toUtf8().data();
@@ -267,7 +281,7 @@ void TransferWindow::onListReadyRead() {
                 offset ++;
             
             
-            statusBar()->showMessage("Sending file...");
+            statusBar()->showMessage(tr("Sending file..."));
             server_->close();
             
             fn = fname.substr(offset, fname.length());
@@ -315,7 +329,7 @@ void TransferWindow::onListReadyRead() {
             file_sending = false;
             
             if(pos >= len) {
-                QMessageBox::information(this, "File Sent.", "Transfer Complete!");
+                QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
             }
         }
     }
@@ -340,35 +354,35 @@ void TransferWindow::onNewConnection() {
 
 
 void TransferWindow::onAbout() {
-    QMessageBox::information(this, "About QTransfer", "Written by Jared Bruni in C++<br>\n<br>Be sure to remember to <b>forward the port</b> you choose in your routers settings if your listening for a connection.<br><br><a href=\"http://lostsidedead.com\">http://lostsidedead.com</a>");
+    QMessageBox::information(this, tr("About QTransfer"), tr("Written by Jared Bruni in C++<br>\n<br>Be sure to remember to <b>forward the port</b> you choose in your routers settings if your listening for a connection.<br><br><a href=\"http://lostsidedead.com\">http://lostsidedead.com</a>"));
 }
 
 ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     setGeometry(100, 100, 310, 150);
-    QLabel *lbl_1 = new QLabel("IP: ", this);
+    QLabel *lbl_1 = new QLabel(tr("IP: "), this);
     lbl_1->setGeometry(10, 10, 25, 25);
     tex_ip = new QLineEdit("", this);
     tex_ip->setGeometry(35, 10, 100, 20);
     tex_port = new QLineEdit("", this);
     tex_port->setValidator(new QRegExpValidator(QRegExp("[0-9]*"), this));
-    QLabel *lbl_2 = new QLabel("Port: ", this);
+    QLabel *lbl_2 = new QLabel(tr("Port: "), this);
     lbl_2->setGeometry(140, 10, 25, 25);
     tex_port->setGeometry(170, 10, 50, 20);
-    con_start = new QPushButton("Connect", this);
+    con_start = new QPushButton(tr("Connect"), this);
     con_start->setGeometry(225, 10, 75, 20);
-    QLabel *lbl_3 = new QLabel("Password: ", this);
+    QLabel *lbl_3 = new QLabel(tr("Password: "), this);
     lbl_3->setGeometry(10, 40, 70, 20);
-    tex_pass = new QLineEdit("password", this);
+    tex_pass = new QLineEdit(tr("password"), this);
     tex_pass->setGeometry(75, 40, 100, 20);
-    con_status = new QLabel("Status..", this);
+    con_status = new QLabel(tr("Status.."), this);
     con_status->setGeometry(10, 75, 300, 25);
-    setWindowTitle("Connect to IP Address");
+    setWindowTitle(tr("Connect to IP Address"));
     connect(con_start, SIGNAL(clicked()), this, SLOT(onConnect()));
     setFixedSize(310, 150);
-    con_path = new QPushButton("[Select Dir]", this);
+    con_path = new QPushButton(tr("[Select Dir]"), this);
     con_path->setGeometry(10, 100, 120, 20);
-    con_pathf = new QLabel(" Directory ", this);
-    con_pathf->setGeometry(130, 100, 200, 20);
+    con_pathf = new QLabel(tr(" Directory "), this);
+    con_pathf->setGeometry(135, 100, 200, 20);
     connect(con_path, SIGNAL(clicked()), this, SLOT(onSelectDir()));
 }
 
@@ -377,27 +391,28 @@ void ConnectWindow::onConnect() {
     QString ip = tex_ip->text();
     QRegExp ex("(\\d{1,3}(\\.\\d{1,3}){3})");
     if(!ex.exactMatch(ip)) {
-        QMessageBox::information(this, "Invalid", "Invalid IP address try again..\n");
+        QMessageBox::information(this, tr("Invalid"), tr("Invalid IP address try again..\n"));
         return;
     }
     QString port = tex_port->text();
+    int the_port = port.toInt();
     
-    if(port.toInt() <= 0) {
-        QMessageBox::information(this, "Invalid Port", "Invalid Port Number...\n");
+    if(the_port <= 0) {
+        QMessageBox::information(this, tr("Invalid Port"), tr("Invalid Port Number...\n"));
         return;
     }
     
     if(tex_pass->text().length() == 0) {
-        QMessageBox::information(this, "password required", "Password must be at least 1 character..\n");
+        QMessageBox::information(this, tr("password required"), tr("Password must be at least 1 character..\n"));
         return;
     }
     
     if(file_dir.length() == 0) {
-        QMessageBox::information(this, "Requires dir path", "You need to provide the directory to save to..");
+        QMessageBox::information(this, tr("Requires dir path"), tr("You need to provide the directory to save to.."));
         return;
     }
     
-    if(parent_->connectTo(ip, port.toInt()) == true) {
+    if(parent_->connectTo(ip, the_port) == true) {
         
     }
 }
@@ -418,23 +433,23 @@ void ConnectWindow::setParentWindow(TransferWindow *win) {
 
 ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     setGeometry(100,100,270,130);
-    QLabel *lbl_1 = new QLabel("Port: ", this);
+    QLabel *lbl_1 = new QLabel(tr("Port: "), this);
     lbl_1->setGeometry(10, 10, 75, 20);
     list_port = new QLineEdit("", this);
     list_port->setGeometry(75, 10, 100, 20);
     list_port->setValidator(new QRegExpValidator(QRegExp("[0-9]*"), this));
-    list_start = new QPushButton("Listen", this);
+    list_start = new QPushButton(tr("Listen"), this);
     list_start->setGeometry(185, 10, 75, 20);
-    list_status = new QLabel("Listen Status", this);
+    list_status = new QLabel(tr("Listen Status"), this);
     list_status->setGeometry(10, 35, 280, 20);
-    setWindowTitle("Listen for Connection");
+    setWindowTitle(tr("Listen for Connection"));
     list_select = new QPushButton("[File]", this);
     list_select->setGeometry(10,60,50,20);
-    list_file = new QLabel("Please Select File...", this);
+    list_file = new QLabel(tr("Please Select File..."), this);
     list_file->setGeometry(65, 60, 200, 20);
-    QLabel *lbl_2 = new QLabel("Password: ", this);
+    QLabel *lbl_2 = new QLabel(tr("Password: "), this);
     lbl_2->setGeometry(10, 85, 75, 20);
-    list_pass = new QLineEdit("password", this);
+    list_pass = new QLineEdit(tr("password"), this);
     list_pass->setGeometry(85, 85, 100, 20);
     connect(list_select, SIGNAL(clicked()), this, SLOT(onSelectFile()));
     connect(list_start, SIGNAL(clicked()), this, SLOT(onListen()));
@@ -445,17 +460,17 @@ ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
 void ListenWindow::onListen() {
     QString port = list_port->text();
     if(port.toInt() <= 0) {
-        QMessageBox::information(this, "Invalid Port", "Invalid Port Number...\n");
+        QMessageBox::information(this, tr("Invalid Port"), tr("Invalid Port Number...\n"));
         return;
     }
     
     if(list_pass->text().length() == 0) {
-        QMessageBox::information(this, "Required Pass", "Password must be atleast 1 character..\n");
+        QMessageBox::information(this, tr("Required Pass"), tr("Password must be atleast 1 character..\n"));
         return;
     }
     
     if(file_name.length() == 0) {
-        QMessageBox::information(this, "Required File", "Please Select a File to Transfer");
+        QMessageBox::information(this, tr("Required File"), tr("Please Select a File to Transfer"));
         return;
     }
     
@@ -463,7 +478,7 @@ void ListenWindow::onListen() {
 }
 
 void ListenWindow::onSelectFile() {
-    QString input_file = QFileDialog::getOpenFileName(this, "Select a File", "", "");
+    QString input_file = QFileDialog::getOpenFileName(this, tr("Select a File"), "", "");
     if(input_file != "") {
         file_name = input_file;
         list_file->setText(file_name);
