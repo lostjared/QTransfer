@@ -16,7 +16,7 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     con_window->setParentWindow(this);
     listen_window->setParentWindow(this);
     
-    file_name = new QLabel(tr("File name"), this);
+    file_name = new QLabel("", this);
     file_name->setGeometry(10, 25, 200, 20);
     transfer_bar = new QProgressBar(this);
     transfer_bar->setGeometry(10, 55, 620, 20);
@@ -147,6 +147,15 @@ void TransferWindow::onConReadyRead() {
         qint64 length = socket_->readLine(buf, sizeof(buf));
         if(length > 0) {
             std::string str = buf;
+            
+            if(str=="incorrect\n") {
+                statusBar()->showMessage("Incorrect Password");
+                socket_->close();
+                QMessageBox::information(this, "Invalid Password", "The password is incorrect. Try again.\n");
+                transfer_bar->setValue(0);
+                return;
+            }
+            
             std::string filename = str.substr(0, str.find(":"));
             std::string slen = str.substr(str.find(":")+1, str.length());
             file_name->setText(filename.c_str());
@@ -163,7 +172,7 @@ void TransferWindow::onConReadyRead() {
             }
             
             unsigned long pos = 0;
-            unsigned it = 0;
+            unsigned long it = 0;
             
             
             while(pos < len) {
@@ -186,11 +195,14 @@ void TransferWindow::onConReadyRead() {
                 }
                 
             }
-            
             transfer_bar->setValue(len);
             outfile.close();
             socket_->close();
             file_show->setEnabled(true);
+            
+            if(pos >= len) {
+            	QMessageBox::information(this, "File Sent.", "Transfer Complete!");
+            }
         }
     }
     
@@ -221,13 +233,18 @@ void TransferWindow::onListError(QAbstractSocket::SocketError /*se*/) {
 }
 
 void TransferWindow::onListReadyRead() {
+    file_sending = false;
     char buf[1024];
     if(file_sending == false) {
         list_socket->readLine(buf, sizeof(buf));
         QString pw = buf;
         if(pw != listen_window->list_pass->text()+"\n") {
+            list_socket->write("incorrect\n");
             list_socket->close();
             statusBar()->showMessage("Invalid password attempt..\n");
+            transfer_bar->setValue(0);
+            file_sending = false;
+            return;
         } else {
             statusBar()->showMessage("Password accepted, sending file..\n");
             std::fstream file;
@@ -251,6 +268,7 @@ void TransferWindow::onListReadyRead() {
             
             
             statusBar()->showMessage("Sending file...");
+            server_->close();
             
             fn = fname.substr(offset, fname.length());
             
@@ -273,6 +291,8 @@ void TransferWindow::onListReadyRead() {
             
             list_socket->write(buffer, qstrlen(buffer));
             
+            file_sending = true;
+            
             while(!file.eof()) {
                 char buf[4096];
                 file.read(buf, 4096);
@@ -289,22 +309,27 @@ void TransferWindow::onListReadyRead() {
                 }
             }
             
-            
             file.close();
             list_socket->close();
             file_show->setEnabled(true);
+            file_sending = false;
+            
+            if(pos >= len) {
+                QMessageBox::information(this, "File Sent.", "Transfer Complete!");
+            }
         }
     }
 }
 
 void TransferWindow::onListBytesWritten(qint64 bytes) {
-    unsigned long value = transfer_bar->value()+bytes;
-    transfer_bar->setValue(value);
+    if(file_sending == true) {
+    	unsigned long value = transfer_bar->value()+bytes;
+    	transfer_bar->setValue(value);
+    }
 }
 
 void TransferWindow::onNewConnection() {
     list_socket = server_->nextPendingConnection();
-    server_->close();
     listen_window->hide();
     connect(list_socket, SIGNAL(connected()), this, SLOT(onListConnected()));
     connect(list_socket, SIGNAL(disconnected()), this, SLOT(onListDisconnected()));
@@ -409,7 +434,7 @@ ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     list_file->setGeometry(65, 60, 200, 20);
     QLabel *lbl_2 = new QLabel("Password: ", this);
     lbl_2->setGeometry(10, 85, 75, 20);
-    list_pass = new QLineEdit("", this);
+    list_pass = new QLineEdit("password", this);
     list_pass->setGeometry(85, 85, 100, 20);
     connect(list_select, SIGNAL(clicked()), this, SLOT(onSelectFile()));
     connect(list_start, SIGNAL(clicked()), this, SLOT(onListen()));
