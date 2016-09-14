@@ -340,7 +340,7 @@ void TransferWindow::onNewConnection() {
 
 
 void TransferWindow::onAbout() {
-    QMessageBox::information(this, "About QTransfer", "Written by Jared Bruni in C++<br>\n<a href=\"http://lostsidedead.com\">http://lostsidedead.com</a>");
+    QMessageBox::information(this, "About QTransfer", "Written by Jared Bruni in C++<br>\n<br>Be sure to remember to <b>forward the port</b> you choose in your routers settings if your listening for a connection.<br><br><a href=\"http://lostsidedead.com\">http://lostsidedead.com</a>");
 }
 
 ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
