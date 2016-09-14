@@ -100,6 +100,7 @@ void TransferWindow::onShowInFinder() {
 
 void TransferWindow::onConConnected() {
     std::cout << "Connected..\n";
+    setWindowTitle(tr("QTransfer - Connect "));
     con_window->hide();
     
     con_window->con_start->setEnabled(false);
@@ -107,7 +108,7 @@ void TransferWindow::onConConnected() {
 
     file_show->setEnabled(false);
     
-    statusBar()->showMessage("Connected");
+    statusBar()->showMessage(tr("Connected"));
     QString value;
     QTextStream stream(&value);
     stream << con_window->tex_pass->text() << "\n";
@@ -116,9 +117,13 @@ void TransferWindow::onConConnected() {
 }
 void TransferWindow::onConDisconnected() {
     std::cout << "Disconnected..\n";
-    statusBar()->showMessage("Disconnected");
+    
+    setWindowTitle(tr("QTransfer - "));
+    
+    statusBar()->showMessage(tr("Disconnected"));
     con_window->con_start->setEnabled(true);
     listen_window->list_start->setEnabled(true);
+    
 
 }
 void TransferWindow::onConError(QAbstractSocket::SocketError se) {
@@ -209,7 +214,6 @@ void TransferWindow::onConReadyRead() {
                 }
                 
             }
-            transfer_bar->setValue(len);
             outfile.close();
             socket_->close();
             file_show->setEnabled(true);
@@ -229,10 +233,12 @@ void TransferWindow::onListConnected() {
     con_window->con_start->setEnabled(false);
     listen_window->hide();
     file_show->setEnabled(false);
+    setWindowTitle(tr("QTransfer - Listen "));
 }
 
 void TransferWindow::onListDisconnected() {
     std::cout << "Disconnected\n";
+    setWindowTitle(tr("QTransfer - "));
     statusBar()->showMessage("Disconnected");
     listen_window->list_start->setEnabled(true);
     con_window->con_start->setEnabled(true);
@@ -322,11 +328,11 @@ void TransferWindow::onListReadyRead() {
                     QApplication::processEvents();
                 }
             }
-            
+
+            file_sending = false;
             file.close();
             list_socket->close();
             file_show->setEnabled(true);
-            file_sending = false;
             
             if(pos >= len) {
                 QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
