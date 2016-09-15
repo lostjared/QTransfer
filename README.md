@@ -12,6 +12,7 @@ the port in your routers settings!
 To build in the src directory:
 
 $ qmake
+
 $ make
 
  Jared
