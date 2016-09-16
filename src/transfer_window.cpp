@@ -49,6 +49,11 @@ void TransferWindow::createMenu() {
     file_listen->setStatusTip(tr("Listen for Connection [Send File]"));
     file_menu->addAction(file_listen);
     connect(file_listen, SIGNAL(triggered()), this, SLOT(onListen()));
+    file_exit = new QAction(tr("E&xit"), this);
+    file_exit->setShortcut(tr("Ctrl+E"));
+    file_exit->setStatusTip(tr("Exit program"));
+    file_menu->addAction(file_exit);
+    connect(file_exit, SIGNAL(triggered()), this, SLOT(onExit()));
     help_menu = menuBar()->addMenu(tr("&Help"));
     help_about = new QAction(tr("&About"), this);
     help_about->setShortcut(tr("Ctrl+A"));
@@ -82,6 +87,10 @@ void TransferWindow::listenTo(int port) {
     server_->listen(QHostAddress::Any, port);
     listen_window->list_status->setText("Waiting for connection...\n");
     statusBar()->showMessage("Waiting for incoming connection....\n");
+}
+
+void TransferWindow::onExit() {
+    QApplication::exit(0);
 }
 
 void TransferWindow::onConnect() {

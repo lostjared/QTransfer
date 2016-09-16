@@ -70,6 +70,7 @@ public:
     
     
 public slots:
+    void onExit();
     void onConnect();
     void onListen();
     void onAbout();
@@ -88,7 +89,7 @@ public slots:
     
 private:
     QMenu *file_menu, *help_menu;
-    QAction *file_connect, *file_listen;
+    QAction *file_connect, *file_listen, *file_exit;
     QAction *help_about;
     QProgressBar *transfer_bar;
     QLabel *file_name;
