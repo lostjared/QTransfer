@@ -1,10 +1,25 @@
 #ifndef __TRANSFER_QT_H__
 #define __TRANSFER_QT_H__
 
-#include<QtCore>
-#include<QtGui>
+#include<QApplication>
+#include<QDialog>
+#include<QWidget>
+#include<QLineEdit>
+#include<QLabel>
+#include<QPushButton>
+#include<QMenu>
+#include<QAction>
+#include<QProgressBar>
 #include<QTcpSocket>
+#include<QMainWindow>
+#include<QMenuBar>
+#include<QUrl>
+#include<QRegExpValidator>
 #include<QTcpServer>
+#include<QStatusBar>
+#include<QMessageBox>
+#include<QFileDialog>
+#include<QDesktopServices>
 #include<fstream>
 
 class TransferWindow;
