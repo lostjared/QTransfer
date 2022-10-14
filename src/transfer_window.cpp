@@ -379,7 +379,7 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     tex_ip = new QLineEdit("", this);
     tex_ip->setGeometry(35, 10, 100, 20);
     tex_port = new QLineEdit("", this);
-    tex_port->setValidator(new QRegExpValidator(QRegExp("[0-9]*"), this));
+    tex_port->setValidator(new QRegularExpressionValidator(QRegularExpression("[0-9]*"), this));
     QLabel *lbl_2 = new QLabel(tr("Port: "), this);
     lbl_2->setGeometry(140, 10, 25, 25);
     tex_port->setGeometry(170, 10, 50, 20);
@@ -404,8 +404,8 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
 // Connect code here
 void ConnectWindow::onConnect() {
     QString ip = tex_ip->text();
-    QRegExp ex("(\\d{1,3}(\\.\\d{1,3}){3})");
-    if(!ex.exactMatch(ip)) {
+    QRegularExpression ex("(\\d{1,3}(\\.\\d{1,3}){3})");
+    if(!ex.match(ip).hasMatch()) {
         QMessageBox::information(this, tr("Invalid"), tr("Invalid IP address try again..\n"));
         return;
     }
@@ -452,7 +452,7 @@ ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     lbl_1->setGeometry(10, 10, 75, 20);
     list_port = new QLineEdit("", this);
     list_port->setGeometry(75, 10, 100, 20);
-    list_port->setValidator(new QRegExpValidator(QRegExp("[0-9]*"), this));
+    list_port->setValidator(new QRegularExpressionValidator(QRegularExpression("[0-9]*"), this));
     list_start = new QPushButton(tr("Listen"), this);
     list_start->setGeometry(185, 10, 75, 20);
     list_status = new QLabel(tr("Listen Status"), this);

@@ -14,7 +14,7 @@
 #include<QMainWindow>
 #include<QMenuBar>
 #include<QUrl>
-#include<QRegExpValidator>
+#include<QRegularExpressionValidator>
 #include<QTcpServer>
 #include<QStatusBar>
 #include<QMessageBox>
