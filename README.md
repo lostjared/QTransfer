@@ -5,7 +5,7 @@
 Video Demo: https://www.youtube.com/watch?v=YRCIpXOiWik
 
 Small Practice C++ Application to Transfer a file
-Requires Qt4
+Updated to use new QRegularExpression and QRegularExpressionValidator
 
 If your listening for a connection be sure to forward 
 the port in your routers settings!
