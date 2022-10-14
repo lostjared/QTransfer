@@ -1,0 +1,2 @@
+Updated to use
+QRegularExpression and QRegularExpressionValidator
