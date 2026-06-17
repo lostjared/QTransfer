@@ -11,12 +11,17 @@
 #include <string_view>
 
 #include <QByteArray>
+#include <QFormLayout>
 #include <QDir>
 #include <QFileInfo>
+#include <QFont>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 
 namespace {
     constexpr qint64 READ_CHUNK_SIZE = 4096;
     constexpr qint64 SEND_BUFFER_LIMIT = 64 * 1024;
+    constexpr int DIALOG_FONT_SIZE = 10;
 
     int progressPercent(std::uintmax_t current, std::uintmax_t total) {
         if (total == 0) {
@@ -30,10 +35,15 @@ namespace {
     QString safeFileName(const QString &filename) {
         return QString::fromStdString(std::filesystem::path(filename.toStdString()).filename().string());
     }
+
+    void applyDialogFont(QWidget *widget) {
+        QFont font = widget->font();
+        font.setPointSize(DIALOG_FONT_SIZE);
+        widget->setFont(font);
+    }
 } // namespace
 
 TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
-    setGeometry(100, 100, 640, 170);
     createMenu();
     statusBar()->showMessage(tr("Welcome to QTransfer"));
     con_window = new ConnectWindow(this);
@@ -41,21 +51,41 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     con_window->setParentWindow(this);
     listen_window->setParentWindow(this);
 
-    file_name = new QLabel("", this);
-    file_name->setGeometry(10, 25, 200, 20);
-    transfer_bar = new QProgressBar(this);
-    transfer_bar->setGeometry(10, 55, 620, 20);
+    auto *central = new QWidget(this);
+    auto *layout = new QVBoxLayout(central);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
 
-    file_cancel = new QPushButton("Cancel", this);
-    file_cancel->setGeometry(520, 85, 100, 20);
-    file_show = new QPushButton("Show", this);
-    file_show->setGeometry(410, 85, 100, 20);
+    auto *title = new QLabel(tr("Active Transfer"), central);
+    QFont title_font = title->font();
+    title_font.setPointSize(title_font.pointSize() + 2);
+    title_font.setBold(true);
+    title->setFont(title_font);
+    layout->addWidget(title);
+
+    file_name = new QLabel(tr("No file selected"), central);
+    file_name->setWordWrap(true);
+    layout->addWidget(file_name);
+
+    transfer_bar = new QProgressBar(central);
+    transfer_bar->setRange(0, 100);
+    layout->addWidget(transfer_bar);
+
+    auto *buttonRow = new QHBoxLayout();
+    buttonRow->addStretch(1);
+    file_show = new QPushButton(tr("Show"), central);
+    file_cancel = new QPushButton(tr("Cancel"), central);
+    buttonRow->addWidget(file_show);
+    buttonRow->addWidget(file_cancel);
+    layout->addLayout(buttonRow);
+
+    setCentralWidget(central);
     file_show->setEnabled(false);
     connect(file_cancel, &QPushButton::clicked, this, &TransferWindow::onCancel);
     connect(file_show, &QPushButton::clicked, this, &TransferWindow::onShowInFinder);
 
     setWindowTitle(tr("QTransfer - "));
-    setFixedSize(640, 170);
+    setMinimumSize(560, 200);
     server_ = nullptr;
     socket_ = nullptr;
     file_bytes = file_len = 0;
@@ -504,32 +534,60 @@ void TransferWindow::onAbout() {
 }
 
 ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
-    setGeometry(100, 100, 310, 150);
-    QLabel *lbl_1 = new QLabel(tr("IP: "), this);
-    lbl_1->setGeometry(10, 10, 25, 25);
-    tex_ip = new QLineEdit("", this);
-    tex_ip->setGeometry(35, 10, 100, 20);
-    tex_port = new QLineEdit("", this);
-    tex_port->setValidator(new QRegularExpressionValidator(QRegularExpression("[0-9]*"), this));
-    QLabel *lbl_2 = new QLabel(tr("Port: "), this);
-    lbl_2->setGeometry(140, 10, 25, 25);
-    tex_port->setGeometry(170, 10, 50, 20);
-    con_start = new QPushButton(tr("Connect"), this);
-    con_start->setGeometry(225, 10, 75, 20);
-    QLabel *lbl_3 = new QLabel(tr("Password: "), this);
-    lbl_3->setGeometry(10, 40, 70, 20);
-    tex_pass = new QLineEdit(tr("password"), this);
-    tex_pass->setGeometry(75, 40, 100, 20);
-    con_status = new QLabel(tr("Status.."), this);
-    con_status->setGeometry(10, 75, 300, 25);
     setWindowTitle(tr("Connect to IP Address"));
+
+    auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(10);
+
+    auto *form = new QFormLayout();
+    form->setLabelAlignment(Qt::AlignLeft);
+    form->setFormAlignment(Qt::AlignTop);
+    form->setHorizontalSpacing(12);
+    form->setVerticalSpacing(8);
+
+    auto *lbl_1 = new QLabel(tr("IP:"), this);
+    auto *lbl_2 = new QLabel(tr("Port:"), this);
+    auto *lbl_3 = new QLabel(tr("Password:"), this);
+    tex_ip = new QLineEdit(this);
+    tex_port = new QLineEdit(this);
+    tex_port->setValidator(new QRegularExpressionValidator(QRegularExpression("[0-9]*"), this));
+    tex_pass = new QLineEdit(tr("password"), this);
+
+    form->addRow(lbl_1, tex_ip);
+    form->addRow(lbl_2, tex_port);
+    form->addRow(lbl_3, tex_pass);
+    layout->addLayout(form);
+
+    auto *dirRow = new QHBoxLayout();
+    dirRow->setSpacing(10);
+    con_path = new QPushButton(tr("Select Directory"), this);
+    con_pathf = new QLabel(tr("No directory selected"), this);
+    con_pathf->setWordWrap(true);
+    dirRow->addWidget(con_path);
+    dirRow->addWidget(con_pathf, 1);
+    layout->addLayout(dirRow);
+
+    con_status = new QLabel(tr("Status.."), this);
+    con_status->setWordWrap(true);
+    layout->addWidget(con_status);
+
+    auto *buttonRow = new QHBoxLayout();
+    buttonRow->addStretch(1);
+    con_start = new QPushButton(tr("Connect"), this);
+    buttonRow->addWidget(con_start);
+    layout->addLayout(buttonRow);
+
+    setMinimumSize(380, 220);
     connect(con_start, &QPushButton::clicked, this, &ConnectWindow::onConnect);
-    setFixedSize(310, 150);
-    con_path = new QPushButton(tr("[Select Dir]"), this);
-    con_path->setGeometry(10, 100, 120, 20);
-    con_pathf = new QLabel(tr(" Directory "), this);
-    con_pathf->setGeometry(135, 100, 200, 20);
     connect(con_path, &QPushButton::clicked, this, &ConnectWindow::onSelectDir);
+
+    for (auto *widget : {qobject_cast<QWidget *>(lbl_1), qobject_cast<QWidget *>(lbl_2), qobject_cast<QWidget *>(lbl_3),
+                         qobject_cast<QWidget *>(tex_ip), qobject_cast<QWidget *>(tex_port), qobject_cast<QWidget *>(tex_pass),
+                         qobject_cast<QWidget *>(con_start), qobject_cast<QWidget *>(con_path), qobject_cast<QWidget *>(con_status),
+                         qobject_cast<QWidget *>(con_pathf)}) {
+        applyDialogFont(widget);
+    }
 }
 
 // Connect code here
@@ -578,28 +636,57 @@ void ConnectWindow::setParentWindow(TransferWindow *win) {
 }
 
 ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
-    setGeometry(100, 100, 270, 130);
-    QLabel *lbl_1 = new QLabel(tr("Port: "), this);
-    lbl_1->setGeometry(10, 10, 75, 20);
-    list_port = new QLineEdit("", this);
-    list_port->setGeometry(75, 10, 100, 20);
-    list_port->setValidator(new QRegularExpressionValidator(QRegularExpression("[0-9]*"), this));
-    list_start = new QPushButton(tr("Listen"), this);
-    list_start->setGeometry(185, 10, 75, 20);
-    list_status = new QLabel(tr("Listen Status"), this);
-    list_status->setGeometry(10, 35, 280, 20);
     setWindowTitle(tr("Listen for Connection"));
-    list_select = new QPushButton("[File]", this);
-    list_select->setGeometry(10, 60, 50, 20);
-    list_file = new QLabel(tr("Please Select File..."), this);
-    list_file->setGeometry(65, 60, 200, 20);
-    QLabel *lbl_2 = new QLabel(tr("Password: "), this);
-    lbl_2->setGeometry(10, 85, 75, 20);
+
+    auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(10);
+
+    auto *form = new QFormLayout();
+    form->setLabelAlignment(Qt::AlignLeft);
+    form->setFormAlignment(Qt::AlignTop);
+    form->setHorizontalSpacing(12);
+    form->setVerticalSpacing(8);
+
+    auto *lbl_1 = new QLabel(tr("Port:"), this);
+    auto *lbl_2 = new QLabel(tr("Password:"), this);
+    list_port = new QLineEdit(this);
+    list_port->setValidator(new QRegularExpressionValidator(QRegularExpression("[0-9]*"), this));
     list_pass = new QLineEdit(tr("password"), this);
-    list_pass->setGeometry(85, 85, 100, 20);
+
+    form->addRow(lbl_1, list_port);
+    form->addRow(lbl_2, list_pass);
+    layout->addLayout(form);
+
+    auto *fileRow = new QHBoxLayout();
+    fileRow->setSpacing(10);
+    list_select = new QPushButton(tr("Select File"), this);
+    list_file = new QLabel(tr("Please select a file..."), this);
+    list_file->setWordWrap(true);
+    fileRow->addWidget(list_select);
+    fileRow->addWidget(list_file, 1);
+    layout->addLayout(fileRow);
+
+    list_status = new QLabel(tr("Listen Status"), this);
+    list_status->setWordWrap(true);
+    layout->addWidget(list_status);
+
+    auto *buttonRow = new QHBoxLayout();
+    buttonRow->addStretch(1);
+    list_start = new QPushButton(tr("Listen"), this);
+    buttonRow->addWidget(list_start);
+    layout->addLayout(buttonRow);
+
+    setMinimumSize(380, 210);
     connect(list_select, &QPushButton::clicked, this, &ListenWindow::onSelectFile);
     connect(list_start, &QPushButton::clicked, this, &ListenWindow::onListen);
-    setFixedSize(270, 130);
+
+    for (auto *widget : {qobject_cast<QWidget *>(lbl_1), qobject_cast<QWidget *>(lbl_2),
+                         qobject_cast<QWidget *>(list_port), qobject_cast<QWidget *>(list_pass),
+                         qobject_cast<QWidget *>(list_start), qobject_cast<QWidget *>(list_select),
+                         qobject_cast<QWidget *>(list_status), qobject_cast<QWidget *>(list_file)}) {
+        applyDialogFont(widget);
+    }
 }
 
 void ListenWindow::onListen() {

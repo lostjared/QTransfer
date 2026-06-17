@@ -5,17 +5,26 @@
 #include <QHBoxLayout>
 #include <QHostAddress>
 #include <QMessageBox>
+#include <QFont>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
 #include <QVBoxLayout>
 
 namespace {
+constexpr int DIALOG_FONT_SIZE = 10;
+
 QString escapeHtml(QString text) {
     return text.toHtmlEscaped();
 }
 
 QString timestamp() {
     return QDateTime::currentDateTime().toString("hh:mm:ss");
+}
+
+void applyDialogFont(QWidget *widget) {
+    QFont font = widget->font();
+    font.setPointSize(DIALOG_FONT_SIZE);
+    widget->setFont(font);
 }
 } // namespace
 
@@ -287,8 +296,12 @@ void ChatWindow::disconnectSession(const QString &reason) {
 ChatConnectWindow::ChatConnectWindow(QWidget *parent) : QDialog(parent) {
     setWindowTitle(tr("Chat Connect"));
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(14, 14, 14, 14);
+    layout->setSpacing(10);
 
     auto *form = new QFormLayout();
+    form->setVerticalSpacing(8);
+    form->setHorizontalSpacing(10);
     host_edit_ = new QLineEdit(this);
     host_edit_->setPlaceholderText(tr("127.0.0.1"));
     port_edit_ = new QLineEdit(this);
@@ -317,6 +330,13 @@ ChatConnectWindow::ChatConnectWindow(QWidget *parent) : QDialog(parent) {
 
     connect(connect_button_, &QPushButton::clicked, this, &ChatConnectWindow::onConnectClicked);
     connect(listen_button_, &QPushButton::clicked, this, &ChatConnectWindow::onListenClicked);
+
+    for (auto *widget : {qobject_cast<QWidget *>(host_edit_), qobject_cast<QWidget *>(port_edit_),
+                         qobject_cast<QWidget *>(nick_edit_), qobject_cast<QWidget *>(password_edit_),
+                         qobject_cast<QWidget *>(connect_button_), qobject_cast<QWidget *>(listen_button_),
+                         qobject_cast<QWidget *>(status_label_)}) {
+        applyDialogFont(widget);
+    }
 
     resize(360, 220);
 }
