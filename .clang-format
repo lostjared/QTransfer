@@ -1,0 +1,12 @@
+BasedOnStyle: LLVM
+BreakBeforeBraces: Attach
+IndentWidth: 4
+ContinuationIndentWidth: 4
+TabWidth: 4
+UseTab: Never
+PointerAlignment: Right
+ReferenceAlignment: Pointer
+ColumnLimit: 0
+NamespaceIndentation: All
+AllowShortEnumsOnASingleLine: false
+
