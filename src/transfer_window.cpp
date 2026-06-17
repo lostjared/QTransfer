@@ -1,4 +1,5 @@
 #include "transfer_window.h"
+#include "chat_window.h"
 
 #include <algorithm>
 #include <array>
@@ -66,6 +67,11 @@ void TransferWindow::createMenu() {
     file_listen->setStatusTip(tr("Listen for Connection [Send File]"));
     file_menu->addAction(file_listen);
     connect(file_listen, &QAction::triggered, this, &TransferWindow::onListen);
+    file_chat = new QAction(tr("&Chat..."), this);
+    file_chat->setShortcut(tr("Ctrl+T"));
+    file_chat->setStatusTip(tr("Open a rich text chat session"));
+    file_menu->addAction(file_chat);
+    connect(file_chat, &QAction::triggered, this, &TransferWindow::onChat);
     file_exit = new QAction(tr("E&xit"), this);
     file_exit->setShortcut(tr("Ctrl+E"));
     file_exit->setStatusTip(tr("Exit program"));
@@ -123,6 +129,16 @@ void TransferWindow::onConnect() {
 
 void TransferWindow::onListen() {
     listen_window->show();
+}
+
+void TransferWindow::onChat() {
+    if (chat_connect_window_ == nullptr) {
+        chat_connect_window_ = new ChatConnectWindow(this);
+    }
+
+    chat_connect_window_->show();
+    chat_connect_window_->raise();
+    chat_connect_window_->activateWindow();
 }
 
 void TransferWindow::onCancel() {

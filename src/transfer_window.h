@@ -15,6 +15,7 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QRegularExpressionValidator>
+#include <QPointer>
 #include <QStatusBar>
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -24,6 +25,7 @@
 #include <fstream>
 
 class TransferWindow;
+class ChatConnectWindow;
 
 class ConnectWindow : public QDialog {
     Q_OBJECT
@@ -86,6 +88,7 @@ class TransferWindow : public QMainWindow {
     void onExit();
     void onConnect();
     void onListen();
+    void onChat();
     void onAbout();
     void onCancel();
     void onShowInFinder();
@@ -102,7 +105,7 @@ class TransferWindow : public QMainWindow {
 
   private:
     QMenu *file_menu, *help_menu;
-    QAction *file_connect, *file_listen, *file_exit;
+    QAction *file_connect, *file_listen, *file_chat, *file_exit;
     QAction *help_about;
     QProgressBar *transfer_bar = nullptr;
     QLabel *file_name = nullptr;
@@ -114,6 +117,7 @@ class TransferWindow : public QMainWindow {
     QString ex_file_path;
     std::uintmax_t file_len = 0;
     std::uintmax_t file_bytes = 0;
+    QPointer<ChatConnectWindow> chat_connect_window_;
 };
 
 #endif

@@ -14,5 +14,5 @@ CONFIG += c++20
 QMAKE_CFLAGS_ISYSTEM = -I
 
 # Input
-HEADERS += transfer_window.h
-SOURCES += main.cpp transfer_window.cpp
+HEADERS += transfer_window.h chat_window.h
+SOURCES += main.cpp transfer_window.cpp chat_window.cpp
