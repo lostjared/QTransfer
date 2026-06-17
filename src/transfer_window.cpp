@@ -1,11 +1,28 @@
 #include "transfer_window.h"
-#include<iostream>
-#include<string>
-#include<sstream>
-#include<cstdio>
-#include<cstdlib>
-#include<cstring>
 
+#include <algorithm>
+#include <array>
+#include <charconv>
+#include <cstdint>
+#include <filesystem>
+#include <iostream>
+#include <string>
+#include <string_view>
+
+#include <QDir>
+
+namespace {
+constexpr std::size_t kReadChunkSize = 4096;
+
+int progressPercent(std::uintmax_t current, std::uintmax_t total) {
+    if(total == 0) {
+        return 0;
+    }
+
+    const auto value = static_cast<int>((current * 100) / total);
+    return std::clamp(value, 0, 100);
+}
+}
 
 TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     setGeometry(100, 100, 640, 170);
@@ -26,14 +43,14 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
     file_show = new QPushButton("Show", this);
     file_show->setGeometry(410, 85, 100, 20);
     file_show->setEnabled(false);
-    connect(file_cancel, SIGNAL(clicked()), this, SLOT(onCancel()));
-    connect(file_show, SIGNAL(clicked()), this, SLOT(onShowInFinder()));
+    connect(file_cancel, &QPushButton::clicked, this, &TransferWindow::onCancel);
+    connect(file_show, &QPushButton::clicked, this, &TransferWindow::onShowInFinder);
     
     setWindowTitle(tr("QTransfer - "));
     setFixedSize(640, 170);
     file_sending = false;
-    server_ = NULL;
-    socket_ = NULL;
+    server_ = nullptr;
+    socket_ = nullptr;
     file_bytes = file_len = 0;
 }
 
@@ -43,47 +60,54 @@ void TransferWindow::createMenu() {
     file_connect->setShortcut(tr("Ctrl+O"));
     file_connect->setStatusTip(tr("Open a Connection [Receive File]"));
     file_menu->addAction(file_connect);
-    connect(file_connect, SIGNAL(triggered()), this, SLOT(onConnect()));
+    connect(file_connect, &QAction::triggered, this, &TransferWindow::onConnect);
     file_listen = new QAction(tr("&Listen for Connection [Send File]"), this);
     file_listen->setShortcut(tr("Ctrl+L"));
     file_listen->setStatusTip(tr("Listen for Connection [Send File]"));
     file_menu->addAction(file_listen);
-    connect(file_listen, SIGNAL(triggered()), this, SLOT(onListen()));
+    connect(file_listen, &QAction::triggered, this, &TransferWindow::onListen);
     file_exit = new QAction(tr("E&xit"), this);
     file_exit->setShortcut(tr("Ctrl+E"));
     file_exit->setStatusTip(tr("Exit program"));
     file_menu->addAction(file_exit);
-    connect(file_exit, SIGNAL(triggered()), this, SLOT(onExit()));
+    connect(file_exit, &QAction::triggered, this, &TransferWindow::onExit);
     help_menu = menuBar()->addMenu(tr("&Help"));
     help_about = new QAction(tr("&About"), this);
     help_about->setShortcut(tr("Ctrl+A"));
     help_about->setStatusTip(tr("About this program"));
     help_menu->addAction(help_about);
-    connect(help_about, SIGNAL(triggered()), this, SLOT(onAbout()));
+    connect(help_about, &QAction::triggered, this, &TransferWindow::onAbout);
 }
 
-bool TransferWindow::connectTo(QString ip, int port) {
-    
-    if(socket_ != NULL) delete socket_;
-    
+bool TransferWindow::connectTo(const QString &ip, int port) {
+    if(socket_ != nullptr) {
+        socket_->disconnect(this);
+        socket_->deleteLater();
+        socket_ = nullptr;
+    }
+
     socket_ = new QTcpSocket(this);
-    
-    connect(socket_, SIGNAL(connected()), this, SLOT(onConConnected()));
-    connect(socket_, SIGNAL(disconnected()), this, SLOT(onConDisconnected()));
-    connect(socket_, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onConError(QAbstractSocket::SocketError)));
-    connect(socket_, SIGNAL(readyRead()), this, SLOT(onConReadyRead()));
-    
+
+    connect(socket_, &QTcpSocket::connected, this, &TransferWindow::onConConnected);
+    connect(socket_, &QTcpSocket::disconnected, this, &TransferWindow::onConDisconnected);
+    connect(socket_, &QTcpSocket::errorOccurred, this, &TransferWindow::onConError);
+    connect(socket_, &QTcpSocket::readyRead, this, &TransferWindow::onConReadyRead);
+
     con_window->con_status->setText("Connecting .... ");
     std::cout << "Connecting to: " << ip.toUtf8().data() << ":" << port << "\n";
-    
+
     socket_->connectToHost(ip, port);
     return true;
 }
 
 void TransferWindow::listenTo(int port) {
-    if(server_ != NULL) delete server_;
+    if(server_ != nullptr) {
+        server_->close();
+        server_->deleteLater();
+        server_ = nullptr;
+    }
     server_ = new QTcpServer(this);
-    connect(server_, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
+    connect(server_, &QTcpServer::newConnection, this, &TransferWindow::onNewConnection);
     server_->listen(QHostAddress::Any, port);
     listen_window->list_status->setText("Waiting for connection...\n");
     statusBar()->showMessage("Waiting for incoming connection....\n");
@@ -156,83 +180,85 @@ void TransferWindow::onConError(QAbstractSocket::SocketError se) {
 
 void TransferWindow::onConReadyRead() {
     std::cout << "Bytes ready..\n";
-    
-    char buf[1024];
-    if(file_sending == false) {
-        qint64 length = socket_->readLine(buf, sizeof(buf));
-        if(length > 0) {
-            std::string str = buf;
-            
-            if(str=="incorrect\n") {
+
+    if(!file_sending) {
+        const QByteArray header = socket_->readLine();
+        if(!header.isEmpty()) {
+            const std::string_view line{header.constData(), static_cast<std::size_t>(header.size())};
+
+            if(line == "incorrect\n") {
                 statusBar()->showMessage(tr("Incorrect Password"));
                 socket_->close();
                 QMessageBox::information(this, tr("Invalid Password"), tr("The password is incorrect. Try again.\n"));
                 transfer_bar->setValue(0);
                 return;
             }
-    
-            unsigned long col_pos = str.find(":");
-            if(col_pos == std::string::npos) {
+
+            const auto col_pos = line.find(':');
+            if(col_pos == std::string_view::npos) {
                 socket_->close();
                 QMessageBox::warning(this, tr("Invalid host"), tr("Invalid host..\n"));
                 con_window->show();
                 return;
             }
-            
-            std::string filename = str.substr(0, col_pos);
-            
-            std::string slen = str.substr(col_pos+1, str.length());
+
+            const std::string filename{line.substr(0, col_pos)};
+            const std::string_view size_view = line.substr(col_pos + 1);
+
+            std::uintmax_t len = 0;
+            const auto [ptr, ec] = std::from_chars(size_view.data(), size_view.data() + size_view.size(), len);
+            if(ec != std::errc{} || ptr == size_view.data()) {
+                QMessageBox::warning(this, tr("Invalid File Length."), tr("Invalid File Length"));
+                socket_->close();
+                return;
+            }
+
             file_name->setText(filename.c_str());
-            unsigned long len = atol(slen.c_str());
             file_len = len;
-            
-            if(len <= 0) {
+
+            if(len == 0) {
                 QMessageBox::warning(this, tr("Invalid File Length."), tr("Invalid File Length"));
             }
-            
+
             transfer_bar->setRange(0, 100);
-            
-            std::string full_filename = std::string(con_window->file_dir.toUtf8().data()) + "/" + filename;
-            outfile.open(full_filename, std::ios::out | std::ios::binary);
-            ex_file_path = con_window->file_dir;
+
+            const std::filesystem::path full_filename = std::filesystem::path(con_window->file_dir.toStdString()) / filename;
+            outfile.open(full_filename.string(), std::ios::out | std::ios::binary);
+            ex_file_path = QString::fromStdString(full_filename.parent_path().string());
             if(!outfile.is_open()) {
                 QMessageBox::warning(this, tr("Error could not open file"), tr("Couldn't open file"));
                 socket_->close();
                 return;
             }
-            
-            unsigned long pos = 0;
-            unsigned long it = 0;
-            
-            
+
+            std::uintmax_t pos = 0;
             while(pos < len) {
-                char buf[4096];
-                it = socket_->read(buf, 4096);
-                outfile.write(buf, it);
-                transfer_bar->setValue(pos);
-                pos += it;
-                
-                
-                double val = pos, size = len, answer = (val/size)*100;
-                transfer_bar->setValue(static_cast<int>(answer));
-                
-                if(it == 0 && !socket_->waitForReadyRead())
-                    break;
-                
+                std::array<char, kReadChunkSize> buf{};
+                const auto bytes_read = socket_->read(buf.data(), static_cast<qint64>(buf.size()));
+                if(bytes_read <= 0) {
+                    if(!socket_->waitForReadyRead()) {
+                        break;
+                    }
+                    continue;
+                }
+
+                outfile.write(buf.data(), bytes_read);
+                pos += static_cast<std::uintmax_t>(bytes_read);
+                transfer_bar->setValue(progressPercent(pos, len));
+
                 static unsigned int counter = 0;
-                
+
                 ++counter;
                 if((counter%3000) == 0) {
                     QApplication::processEvents();
                 }
-                
             }
             outfile.close();
             socket_->close();
             file_show->setEnabled(true);
-            
+
             if(pos >= len) {
-            	QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
+                QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
             }
         }
     }
@@ -267,11 +293,10 @@ void TransferWindow::onListError(QAbstractSocket::SocketError /*se*/) {
 
 void TransferWindow::onListReadyRead() {
     file_sending = false;
-    char buf[1024];
-    if(file_sending == false) {
-        list_socket->readLine(buf, sizeof(buf));
-        QString pw = buf;
-        if(pw != listen_window->list_pass->text()+"\n") {
+    if(!file_sending) {
+        const QByteArray password_line = list_socket->readLine();
+        const QString expected = listen_window->list_pass->text() + '\n';
+        if(password_line != expected.toUtf8()) {
             list_socket->write("incorrect\n");
             list_socket->close();
             statusBar()->showMessage(tr("Invalid password attempt..\n"));
@@ -281,60 +306,50 @@ void TransferWindow::onListReadyRead() {
         } else {
             statusBar()->showMessage(tr("Password accepted, sending file..\n"));
             std::fstream file;
-            file.open(listen_window->file_name.toUtf8().data(), std::ios::in|std::ios::binary);
-            std::string _filename = listen_window->file_name.toUtf8().data();
-            _filename = _filename.substr(0, _filename.rfind("/"));
-            ex_file_path = _filename.c_str();
-            
+            const std::filesystem::path input_path = listen_window->file_name.toStdString();
+            file.open(input_path.string(), std::ios::in | std::ios::binary);
+            ex_file_path = QString::fromStdString(input_path.parent_path().string());
+
             if(!file.is_open()) {
                 QMessageBox::warning(this, tr("Error"), tr("Could not find file."));
                 return;
             }
-            std::string fname = listen_window->file_name.toUtf8().data();
-            std::string fn, fc;
-            unsigned long offset = 0;
-            offset = fname.rfind("/");
-            if(offset == std::string::npos)
-                offset = 0;
-            else
-                offset ++;
-            
-            
+
+            const std::string fname = input_path.filename().string();
+
             statusBar()->showMessage(tr("Sending file..."));
             server_->close();
-            
-            fn = fname.substr(offset, fname.length());
-            
+
             file.seekg(0, std::ios::end);
-            unsigned long len = file.tellg();
+            const std::uintmax_t len = static_cast<std::uintmax_t>(file.tellg());
             file_len = len;
             file.seekg(0, std::ios::beg);
-            unsigned long pos = 0;
-            
-            std::ostringstream stream;
-            stream << fn << ":" << len << "\n";
-            
-            file_name->setText(fn.c_str());
-            
-            std::cout << stream.str() << "\n";
-            
+
+            std::string header = fname;
+            header.push_back(':');
+            header += std::to_string(len);
+            header.push_back('\n');
+
+            file_name->setText(fname.c_str());
+            std::cout << header << "\n";
+
             transfer_bar->setRange(0, 100);
             file_bytes = 0;
-            char buffer[1024];
-            snprintf(buffer, 1023, "%s", stream.str().c_str());
-            
-            list_socket->write(buffer, qstrlen(buffer));
-            
+
+            list_socket->write(header.data(), static_cast<qint64>(header.size()));
+
             while(!file.eof()) {
-                char buf[4096];
-                file.read(buf, 4096);
-                int bytes_read=file.gcount();
-                if(bytes_read <= 0) break;
-                pos += bytes_read;
-                 list_socket->write(buf, bytes_read);
-                
+                std::array<char, kReadChunkSize> buf{};
+                file.read(buf.data(), static_cast<std::streamsize>(buf.size()));
+                const auto bytes_read = file.gcount();
+                if(bytes_read <= 0) {
+                    break;
+                }
+
+                list_socket->write(buf.data(), bytes_read);
+
                 static unsigned int counter = 0;
-               
+
                 ++counter;
                 if((counter%3000) == 0) {
                     QApplication::processEvents();
@@ -350,9 +365,8 @@ void TransferWindow::onListReadyRead() {
 
 void TransferWindow::onListBytesWritten(qint64 bytes) {
     file_bytes += bytes;
-    double val = file_bytes, size = file_len, answer = (val/size)*100;
-    transfer_bar->setValue(static_cast<int>(answer));
-    if(answer >= 100) {
+    transfer_bar->setValue(progressPercent(file_bytes, file_len));
+    if(file_bytes >= file_len) {
         QMessageBox::information(this, tr("File Sent."), tr("Transfer Complete!"));
      }
 }
@@ -360,11 +374,11 @@ void TransferWindow::onListBytesWritten(qint64 bytes) {
 void TransferWindow::onNewConnection() {
     list_socket = server_->nextPendingConnection();
     listen_window->hide();
-    connect(list_socket, SIGNAL(connected()), this, SLOT(onListConnected()));
-    connect(list_socket, SIGNAL(disconnected()), this, SLOT(onListDisconnected()));
-    connect(list_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onListError(QAbstractSocket::SocketError)));
-    connect(list_socket, SIGNAL(readyRead()), this, SLOT(onListReadyRead()));
-    connect(list_socket, SIGNAL(bytesWritten(qint64)), this, SLOT(onListBytesWritten(qint64)));
+    connect(list_socket, &QTcpSocket::connected, this, &TransferWindow::onListConnected);
+    connect(list_socket, &QTcpSocket::disconnected, this, &TransferWindow::onListDisconnected);
+    connect(list_socket, &QTcpSocket::errorOccurred, this, &TransferWindow::onListError);
+    connect(list_socket, &QTcpSocket::readyRead, this, &TransferWindow::onListReadyRead);
+    connect(list_socket, &QTcpSocket::bytesWritten, this, &TransferWindow::onListBytesWritten);
 }
 
 
@@ -392,51 +406,51 @@ ConnectWindow::ConnectWindow(QWidget *parent) : QDialog(parent) {
     con_status = new QLabel(tr("Status.."), this);
     con_status->setGeometry(10, 75, 300, 25);
     setWindowTitle(tr("Connect to IP Address"));
-    connect(con_start, SIGNAL(clicked()), this, SLOT(onConnect()));
+    connect(con_start, &QPushButton::clicked, this, &ConnectWindow::onConnect);
     setFixedSize(310, 150);
     con_path = new QPushButton(tr("[Select Dir]"), this);
     con_path->setGeometry(10, 100, 120, 20);
     con_pathf = new QLabel(tr(" Directory "), this);
     con_pathf->setGeometry(135, 100, 200, 20);
-    connect(con_path, SIGNAL(clicked()), this, SLOT(onSelectDir()));
+    connect(con_path, &QPushButton::clicked, this, &ConnectWindow::onSelectDir);
 }
 
 // Connect code here
 void ConnectWindow::onConnect() {
-    QString ip = tex_ip->text();
-    QRegularExpression ex("(\\d{1,3}(\\.\\d{1,3}){3})");
+    const QString ip = tex_ip->text();
+    const QRegularExpression ex(R"(^(?:\d{1,3}\.){3}\d{1,3}$)");
     if(!ex.match(ip).hasMatch()) {
         QMessageBox::information(this, tr("Invalid"), tr("Invalid IP address try again..\n"));
         return;
     }
-    QString port = tex_port->text();
-    int the_port = port.toInt();
+    const QString port = tex_port->text();
+    const int the_port = port.toInt();
     
     if(the_port <= 0) {
         QMessageBox::information(this, tr("Invalid Port"), tr("Invalid Port Number...\n"));
         return;
     }
     
-    if(tex_pass->text().length() == 0) {
+    if(tex_pass->text().isEmpty()) {
         QMessageBox::information(this, tr("password required"), tr("Password must be at least 1 character..\n"));
         return;
     }
     
-    if(file_dir.length() == 0) {
+    if(file_dir.isEmpty()) {
         QMessageBox::information(this, tr("Requires dir path"), tr("You need to provide the directory to save to.."));
         return;
     }
-    
-    if(parent_->connectTo(ip, the_port) == true) {
-        
-    }
+    parent_->connectTo(ip, the_port);
 }
 
 void ConnectWindow::onSelectDir() {
- 
-    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),"/home",                                        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    const QString dir = QFileDialog::getExistingDirectory(
+        this,
+        tr("Open Directory"),
+        QDir::homePath(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
     
-    if(dir != "") {
+    if(!dir.isEmpty()) {
         file_dir = dir;
         con_pathf->setText(dir);
     }
@@ -466,25 +480,25 @@ ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
     lbl_2->setGeometry(10, 85, 75, 20);
     list_pass = new QLineEdit(tr("password"), this);
     list_pass->setGeometry(85, 85, 100, 20);
-    connect(list_select, SIGNAL(clicked()), this, SLOT(onSelectFile()));
-    connect(list_start, SIGNAL(clicked()), this, SLOT(onListen()));
+    connect(list_select, &QPushButton::clicked, this, &ListenWindow::onSelectFile);
+    connect(list_start, &QPushButton::clicked, this, &ListenWindow::onListen);
     setFixedSize(270, 130);
 }
 
 
 void ListenWindow::onListen() {
-    QString port = list_port->text();
+    const QString port = list_port->text();
     if(port.toInt() <= 0) {
         QMessageBox::information(this, tr("Invalid Port"), tr("Invalid Port Number...\n"));
         return;
     }
     
-    if(list_pass->text().length() == 0) {
+    if(list_pass->text().isEmpty()) {
         QMessageBox::information(this, tr("Required Pass"), tr("Password must be atleast 1 character..\n"));
         return;
     }
     
-    if(file_name.length() == 0) {
+    if(file_name.isEmpty()) {
         QMessageBox::information(this, tr("Required File"), tr("Please Select a File to Transfer"));
         return;
     }
@@ -493,8 +507,8 @@ void ListenWindow::onListen() {
 }
 
 void ListenWindow::onSelectFile() {
-    QString input_file = QFileDialog::getOpenFileName(this, tr("Select a File"), "", "");
-    if(input_file != "") {
+    const QString input_file = QFileDialog::getOpenFileName(this, tr("Select a File"), QString(), QString());
+    if(!input_file.isEmpty()) {
         file_name = input_file;
         list_file->setText(file_name);
     }
@@ -503,4 +517,3 @@ void ListenWindow::onSelectFile() {
 void ListenWindow::setParentWindow(TransferWindow *win) {
     parent_ = win;
 }
-

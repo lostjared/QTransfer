@@ -1,26 +1,27 @@
 #ifndef __TRANSFER_QT_H__
 #define __TRANSFER_QT_H__
 
-#include<QApplication>
-#include<QDialog>
-#include<QWidget>
-#include<QLineEdit>
-#include<QLabel>
-#include<QPushButton>
-#include<QMenu>
-#include<QAction>
-#include<QProgressBar>
-#include<QTcpSocket>
-#include<QMainWindow>
-#include<QMenuBar>
-#include<QUrl>
-#include<QRegularExpressionValidator>
-#include<QTcpServer>
-#include<QStatusBar>
-#include<QMessageBox>
-#include<QFileDialog>
-#include<QDesktopServices>
-#include<fstream>
+#include <QAction>
+#include <QApplication>
+#include <QDesktopServices>
+#include <QDialog>
+#include <QFileDialog>
+#include <QLabel>
+#include <QLineEdit>
+#include <QMainWindow>
+#include <QMenu>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QProgressBar>
+#include <QPushButton>
+#include <QRegularExpressionValidator>
+#include <QTcpServer>
+#include <QTcpSocket>
+#include <QStatusBar>
+#include <QUrl>
+#include <QWidget>
+#include <cstdint>
+#include <fstream>
 
 class TransferWindow;
 
@@ -28,7 +29,7 @@ class ConnectWindow : public QDialog {
     Q_OBJECT
     
 public:
-    ConnectWindow(QWidget *parent = 0);
+    explicit ConnectWindow(QWidget *parent = nullptr);
     void setParentWindow(TransferWindow *win);
     
     
@@ -39,12 +40,12 @@ public slots:
     void onSelectDir();
     
 private:
-    QLineEdit *tex_ip, *tex_port, *tex_pass;
-    QLabel *con_status;
-    QPushButton *con_start;
-    TransferWindow *parent_;
-    QPushButton *con_path;
-    QLabel *con_pathf;
+    QLineEdit *tex_ip = nullptr, *tex_port = nullptr, *tex_pass = nullptr;
+    QLabel *con_status = nullptr;
+    QPushButton *con_start = nullptr;
+    TransferWindow *parent_ = nullptr;
+    QPushButton *con_path = nullptr;
+    QLabel *con_pathf = nullptr;
     QString file_dir;
 };
 
@@ -52,7 +53,7 @@ class ListenWindow : public QDialog {
     Q_OBJECT
     
 public:
-    ListenWindow(QWidget *parent = 0);
+    explicit ListenWindow(QWidget *parent = nullptr);
     void setParentWindow(TransferWindow *win);
     
     friend class TransferWindow;
@@ -62,12 +63,12 @@ public slots:
     void onSelectFile();
     
 private:
-    QLineEdit *list_port, *list_pass;
-    QPushButton *list_start;
-    QPushButton *list_select;
-    QLabel *list_status, *list_file;
+    QLineEdit *list_port = nullptr, *list_pass = nullptr;
+    QPushButton *list_start = nullptr;
+    QPushButton *list_select = nullptr;
+    QLabel *list_status = nullptr, *list_file = nullptr;
     QString file_name;
-    TransferWindow *parent_;
+    TransferWindow *parent_ = nullptr;
 };
 
 
@@ -77,10 +78,10 @@ public:
     ConnectWindow *con_window;
     ListenWindow *listen_window;
     
-    TransferWindow(QWidget *parent = 0);
+    explicit TransferWindow(QWidget *parent = nullptr);
     void createMenu();
     
-    bool connectTo(QString ip, int port);
+    bool connectTo(const QString &ip, int port);
     void listenTo(int port);
     
     
@@ -106,15 +107,16 @@ private:
     QMenu *file_menu, *help_menu;
     QAction *file_connect, *file_listen, *file_exit;
     QAction *help_about;
-    QProgressBar *transfer_bar;
-    QLabel *file_name;
-    QPushButton *file_cancel, *file_show;
-    QTcpSocket *socket_, *list_socket;
-    QTcpServer *server_;
-    bool file_sending;
+    QProgressBar *transfer_bar = nullptr;
+    QLabel *file_name = nullptr;
+    QPushButton *file_cancel = nullptr, *file_show = nullptr;
+    QTcpSocket *socket_ = nullptr, *list_socket = nullptr;
+    QTcpServer *server_ = nullptr;
+    bool file_sending = false;
     std::fstream outfile;
     QString ex_file_path;
-    unsigned long file_len, file_bytes;
+    std::uintmax_t file_len = 0;
+    std::uintmax_t file_bytes = 0;
 };
 
 
