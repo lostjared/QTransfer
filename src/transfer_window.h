@@ -19,10 +19,10 @@
 #include <QStatusBar>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QFile>
 #include <QUrl>
 #include <QWidget>
 #include <cstdint>
-#include <fstream>
 
 class TransferWindow;
 class ChatConnectWindow;
@@ -112,12 +112,29 @@ class TransferWindow : public QMainWindow {
     QPushButton *file_cancel = nullptr, *file_show = nullptr;
     QTcpSocket *socket_ = nullptr, *list_socket = nullptr;
     QTcpServer *server_ = nullptr;
-    bool file_sending = false;
-    std::fstream outfile;
+    QFile input_file_;
+    QFile output_file_;
+    QByteArray receive_buffer_;
     QString ex_file_path;
-    std::uintmax_t file_len = 0;
-    std::uintmax_t file_bytes = 0;
+    QString incoming_file_name_;
+    QString outgoing_file_name_;
+    bool expecting_transfer_header_ = false;
+    bool sending_transfer_ = false;
+    bool send_header_queued_ = false;
+    bool send_finished_ = false;
+    qint64 file_len = 0;
+    qint64 file_bytes = 0;
+    qint64 send_offset_ = 0;
+    qint64 receive_offset_ = 0;
     QPointer<ChatConnectWindow> chat_connect_window_;
+
+    void resetTransferState();
+    void startSendingSelectedFile();
+    void pumpSendFile();
+    bool openReceivedFile(const QString &filename);
+    void finishReceiveSuccess();
+    void finishSendSuccess();
+    static QString sanitizedFileName(const QString &filename);
 };
 
 #endif
