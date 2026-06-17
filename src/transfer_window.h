@@ -15,9 +15,9 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QRegularExpressionValidator>
+#include <QStatusBar>
 #include <QTcpServer>
 #include <QTcpSocket>
-#include <QStatusBar>
 #include <QUrl>
 #include <QWidget>
 #include <cstdint>
@@ -27,19 +27,18 @@ class TransferWindow;
 
 class ConnectWindow : public QDialog {
     Q_OBJECT
-    
-public:
+
+  public:
     explicit ConnectWindow(QWidget *parent = nullptr);
     void setParentWindow(TransferWindow *win);
-    
-    
+
     friend class TransferWindow;
-    
-public slots:
+
+  public slots:
     void onConnect();
     void onSelectDir();
-    
-private:
+
+  private:
     QLineEdit *tex_ip = nullptr, *tex_port = nullptr, *tex_pass = nullptr;
     QLabel *con_status = nullptr;
     QPushButton *con_start = nullptr;
@@ -51,18 +50,18 @@ private:
 
 class ListenWindow : public QDialog {
     Q_OBJECT
-    
-public:
+
+  public:
     explicit ListenWindow(QWidget *parent = nullptr);
     void setParentWindow(TransferWindow *win);
-    
+
     friend class TransferWindow;
-    
-public slots:
+
+  public slots:
     void onListen();
     void onSelectFile();
-    
-private:
+
+  private:
     QLineEdit *list_port = nullptr, *list_pass = nullptr;
     QPushButton *list_start = nullptr;
     QPushButton *list_select = nullptr;
@@ -71,21 +70,19 @@ private:
     TransferWindow *parent_ = nullptr;
 };
 
-
 class TransferWindow : public QMainWindow {
     Q_OBJECT
-public:
+  public:
     ConnectWindow *con_window;
     ListenWindow *listen_window;
-    
+
     explicit TransferWindow(QWidget *parent = nullptr);
     void createMenu();
-    
+
     bool connectTo(const QString &ip, int port);
     void listenTo(int port);
-    
-    
-public slots:
+
+  public slots:
     void onExit();
     void onConnect();
     void onListen();
@@ -102,8 +99,8 @@ public slots:
     void onListReadyRead();
     void onListBytesWritten(qint64 bytes);
     void onNewConnection();
-    
-private:
+
+  private:
     QMenu *file_menu, *help_menu;
     QAction *file_connect, *file_listen, *file_exit;
     QAction *help_about;
@@ -118,6 +115,5 @@ private:
     std::uintmax_t file_len = 0;
     std::uintmax_t file_bytes = 0;
 };
-
 
 #endif
