@@ -15,6 +15,8 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Network)
 
 add_executable(QTransfer
     src/main.cpp
+    src/chat_window.cpp
+    src/chat_window.h
     src/transfer_window.cpp
     src/transfer_window.h
 )
