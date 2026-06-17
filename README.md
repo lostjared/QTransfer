@@ -1,17 +1,7 @@
 # QTransfer
 
-![ScreenShot](https://github.com/lostjared/QTransfer/blob/master/screenshot.png?raw=true "screenshot")
+<img width="582" height="270" alt="image" src="https://github.com/user-attachments/assets/071321bb-afba-4c10-b553-6f2b8b4e47fb" />
 
-Small Practice C++ Application to Transfer a file
-Updated to use new QRegularExpression and QRegularExpressionValidator
+<img width="1198" height="508" alt="image" src="https://github.com/user-attachments/assets/e132922c-f89b-4eac-9db1-92a0f9b14e1c" />
 
-If your listening for a connection be sure to forward 
-the port in your routers settings!
-
-To build in the src directory:
-
-$ qmake
-
-$ make
-
- Jared
+Updated project to C++20 and added chat feature as well as file transfer.
