@@ -44,7 +44,7 @@ class ConnectWindow : public QDialog {
     QLineEdit *tex_ip = nullptr, *tex_port = nullptr, *tex_pass = nullptr;
     QLabel *con_status = nullptr;
     QPushButton *con_start = nullptr;
-    TransferWindow *parent_ = nullptr;
+    TransferWindow *parent_window = nullptr;
     QPushButton *con_path = nullptr;
     QLabel *con_pathf = nullptr;
     QString file_dir;
@@ -69,7 +69,7 @@ class ListenWindow : public QDialog {
     QPushButton *list_select = nullptr;
     QLabel *list_status = nullptr, *list_file = nullptr;
     QString file_name;
-    TransferWindow *parent_ = nullptr;
+    TransferWindow *parent_window = nullptr;
 };
 
 class TransferWindow : public QMainWindow {
@@ -110,23 +110,23 @@ class TransferWindow : public QMainWindow {
     QProgressBar *transfer_bar = nullptr;
     QLabel *file_name = nullptr;
     QPushButton *file_cancel = nullptr, *file_show = nullptr;
-    QTcpSocket *socket_ = nullptr, *list_socket = nullptr;
-    QTcpServer *server_ = nullptr;
-    QFile input_file_;
-    QFile output_file_;
-    QByteArray receive_buffer_;
+    QTcpSocket *socket = nullptr, *list_socket = nullptr;
+    QTcpServer *server = nullptr;
+    QFile input_file;
+    QFile output_file;
+    QByteArray receive_buffer;
     QString ex_file_path;
-    QString incoming_file_name_;
-    QString outgoing_file_name_;
-    bool expecting_transfer_header_ = false;
-    bool sending_transfer_ = false;
-    bool send_header_queued_ = false;
-    bool send_finished_ = false;
+    QString incoming_file_name;
+    QString outgoing_file_name;
+    bool expecting_transfer_header = false;
+    bool sending_transfer = false;
+    bool send_header_queued = false;
+    bool send_finished = false;
     qint64 file_len = 0;
     qint64 file_bytes = 0;
-    qint64 send_offset_ = 0;
-    qint64 receive_offset_ = 0;
-    QPointer<ChatConnectWindow> chat_connect_window_;
+    qint64 send_offset = 0;
+    qint64 receive_offset = 0;
+    QPointer<ChatConnectWindow> chat_connect_window;
 
     void resetTransferState();
     void startSendingSelectedFile();

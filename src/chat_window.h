@@ -47,19 +47,19 @@ class ChatWindow : public QMainWindow {
     void disconnectSession(const QString &reason);
     void closeResources();
 
-    QTextBrowser *chat_view_ = nullptr;
-    QLineEdit *message_edit_ = nullptr;
-    QPushButton *send_button_ = nullptr;
-    QLabel *status_label_ = nullptr;
+    QTextBrowser *chat_view = nullptr;
+    QLineEdit *message_edit = nullptr;
+    QPushButton *send_button = nullptr;
+    QLabel *status_label = nullptr;
 
-    QTcpSocket *socket_ = nullptr;
-    QTcpServer *server_ = nullptr;
-    Mode mode_ = Mode::Idle;
-    QString local_nick_;
-    QString shared_password_;
-    QString peer_nick_;
-    QByteArray pending_buffer_;
-    bool authenticated_ = false;
+    QTcpSocket *socket = nullptr;
+    QTcpServer *server = nullptr;
+    Mode mode = Mode::Idle;
+    QString local_nick;
+    QString shared_password;
+    QString peer_nick;
+    QByteArray pending_buffer;
+    bool authenticated = false;
 };
 
 class ChatConnectWindow : public QDialog {
@@ -75,14 +75,14 @@ class ChatConnectWindow : public QDialog {
   private:
     void openChat(bool listen_mode);
 
-    QLineEdit *host_edit_ = nullptr;
-    QLineEdit *port_edit_ = nullptr;
-    QLineEdit *nick_edit_ = nullptr;
-    QLineEdit *password_edit_ = nullptr;
-    QPushButton *connect_button_ = nullptr;
-    QPushButton *listen_button_ = nullptr;
-    QLabel *status_label_ = nullptr;
-    QPointer<ChatWindow> chat_window_;
+    QLineEdit *host_edit = nullptr;
+    QLineEdit *port_edit = nullptr;
+    QLineEdit *nick_edit = nullptr;
+    QLineEdit *password_edit = nullptr;
+    QPushButton *connect_button = nullptr;
+    QPushButton *listen_button = nullptr;
+    QLabel *status_label = nullptr;
+    QPointer<ChatWindow> chat_window;
 };
 
 #endif

@@ -86,25 +86,25 @@ TransferWindow::TransferWindow(QWidget *parent) : QMainWindow(parent) {
 
     setWindowTitle(tr("QTransfer - "));
     setMinimumSize(560, 200);
-    server_ = nullptr;
-    socket_ = nullptr;
+    server = nullptr;
+    socket = nullptr;
     file_bytes = file_len = 0;
 }
 
 void TransferWindow::resetTransferState() {
-    receive_buffer_.clear();
-    input_file_.close();
-    output_file_.close();
-    incoming_file_name_.clear();
-    outgoing_file_name_.clear();
-    expecting_transfer_header_ = false;
-    sending_transfer_ = false;
-    send_header_queued_ = false;
-    send_finished_ = false;
+    receive_buffer.clear();
+    input_file.close();
+    output_file.close();
+    incoming_file_name.clear();
+    outgoing_file_name.clear();
+    expecting_transfer_header = false;
+    sending_transfer = false;
+    send_header_queued = false;
+    send_finished = false;
     file_len = 0;
     file_bytes = 0;
-    send_offset_ = 0;
-    receive_offset_ = 0;
+    send_offset = 0;
+    receive_offset = 0;
     transfer_bar->setValue(0);
     file_name->clear();
     file_show->setEnabled(false);
@@ -123,21 +123,21 @@ bool TransferWindow::openReceivedFile(const QString &filename) {
     const std::filesystem::path full_filename =
         std::filesystem::path(con_window->file_dir.toStdString()) / safe_name.toStdString();
 
-    output_file_.setFileName(QString::fromStdString(full_filename.string()));
-    if (!output_file_.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    output_file.setFileName(QString::fromStdString(full_filename.string()));
+    if (!output_file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
         return false;
     }
 
     ex_file_path = QString::fromStdString(full_filename.parent_path().string());
-    incoming_file_name_ = safe_name;
+    incoming_file_name = safe_name;
     file_name->setText(safe_name);
     return true;
 }
 
 void TransferWindow::finishReceiveSuccess() {
-    output_file_.flush();
-    output_file_.close();
-    socket_->disconnectFromHost();
+    output_file.flush();
+    output_file.close();
+    socket->disconnectFromHost();
     file_show->setEnabled(true);
     QMessageBox::information(this, tr("File Received"), tr("Transfer complete!"));
 }
@@ -149,42 +149,42 @@ void TransferWindow::startSendingSelectedFile() {
         return;
     }
 
-    input_file_.setFileName(listen_window->file_name);
-    if (!input_file_.open(QIODevice::ReadOnly)) {
+    input_file.setFileName(listen_window->file_name);
+    if (!input_file.open(QIODevice::ReadOnly)) {
         QMessageBox::warning(this, tr("Error"), tr("Could not find file."));
         return;
     }
 
-    outgoing_file_name_ = safe_name;
+    outgoing_file_name = safe_name;
     file_name->setText(safe_name);
     ex_file_path = QFileInfo(listen_window->file_name).absolutePath();
 
-    file_len = input_file_.size();
+    file_len = input_file.size();
     file_bytes = 0;
-    send_offset_ = 0;
-    sending_transfer_ = true;
-    send_header_queued_ = false;
-    send_finished_ = false;
+    send_offset = 0;
+    sending_transfer = true;
+    send_header_queued = false;
+    send_finished = false;
 
     transfer_bar->setRange(0, 100);
     transfer_bar->setValue(0);
 
-    server_->close();
+    server->close();
 
     const QByteArray header = safe_name.toUtf8() + ':' + QByteArray::number(file_len) + '\n';
     list_socket->write(header);
-    send_header_queued_ = true;
+    send_header_queued = true;
     pumpSendFile();
 }
 
 void TransferWindow::pumpSendFile() {
-    if (!sending_transfer_ || list_socket == nullptr || !input_file_.isOpen() || send_finished_) {
+    if (!sending_transfer || list_socket == nullptr || !input_file.isOpen() || send_finished) {
         return;
     }
 
-    while (send_offset_ < file_len && list_socket->bytesToWrite() < SEND_BUFFER_LIMIT) {
+    while (send_offset < file_len && list_socket->bytesToWrite() < SEND_BUFFER_LIMIT) {
         std::array<char, READ_CHUNK_SIZE> buffer{};
-        const qint64 bytes_read = input_file_.read(buffer.data(), buffer.size());
+        const qint64 bytes_read = input_file.read(buffer.data(), buffer.size());
         if (bytes_read <= 0) {
             break;
         }
@@ -193,33 +193,33 @@ void TransferWindow::pumpSendFile() {
         while (accepted < bytes_read) {
             const qint64 written = list_socket->write(buffer.data() + accepted, bytes_read - accepted);
             if (written <= 0) {
-                input_file_.seek(input_file_.pos() - (bytes_read - accepted));
+                input_file.seek(input_file.pos() - (bytes_read - accepted));
                 return;
             }
             accepted += written;
-            send_offset_ += written;
+            send_offset += written;
         }
 
         if (accepted <= 0) {
             break;
         }
-        transfer_bar->setValue(progressPercent(static_cast<std::uintmax_t>(send_offset_),
+        transfer_bar->setValue(progressPercent(static_cast<std::uintmax_t>(send_offset),
                                                static_cast<std::uintmax_t>(file_len)));
     }
 
-    if (send_offset_ >= file_len && list_socket->bytesToWrite() == 0) {
+    if (send_offset >= file_len && list_socket->bytesToWrite() == 0) {
         finishSendSuccess();
     }
 }
 
 void TransferWindow::finishSendSuccess() {
-    if (send_finished_) {
+    if (send_finished) {
         return;
     }
 
-    send_finished_ = true;
-    sending_transfer_ = false;
-    input_file_.close();
+    send_finished = true;
+    sending_transfer = false;
+    input_file.close();
     if (list_socket != nullptr) {
         list_socket->disconnectFromHost();
     }
@@ -258,37 +258,37 @@ void TransferWindow::createMenu() {
 }
 
 bool TransferWindow::connectTo(const QString &ip, int port) {
-    if (socket_ != nullptr) {
-        socket_->disconnect(this);
-        socket_->deleteLater();
-        socket_ = nullptr;
+    if (socket != nullptr) {
+        socket->disconnect(this);
+        socket->deleteLater();
+        socket = nullptr;
     }
 
-    socket_ = new QTcpSocket(this);
+    socket = new QTcpSocket(this);
 
-    connect(socket_, &QTcpSocket::connected, this, &TransferWindow::onConConnected);
-    connect(socket_, &QTcpSocket::disconnected, this, &TransferWindow::onConDisconnected);
-    connect(socket_, &QTcpSocket::errorOccurred, this, &TransferWindow::onConError);
-    connect(socket_, &QTcpSocket::readyRead, this, &TransferWindow::onConReadyRead);
+    connect(socket, &QTcpSocket::connected, this, &TransferWindow::onConConnected);
+    connect(socket, &QTcpSocket::disconnected, this, &TransferWindow::onConDisconnected);
+    connect(socket, &QTcpSocket::errorOccurred, this, &TransferWindow::onConError);
+    connect(socket, &QTcpSocket::readyRead, this, &TransferWindow::onConReadyRead);
 
     con_window->con_status->setText("Connecting .... ");
     std::cout << "Connecting to: " << ip.toUtf8().data() << ":" << port << "\n";
 
     resetTransferState();
     file_show->setEnabled(false);
-    socket_->connectToHost(ip, port);
+    socket->connectToHost(ip, port);
     return true;
 }
 
 void TransferWindow::listenTo(int port) {
-    if (server_ != nullptr) {
-        server_->close();
-        server_->deleteLater();
-        server_ = nullptr;
+    if (server != nullptr) {
+        server->close();
+        server->deleteLater();
+        server = nullptr;
     }
-    server_ = new QTcpServer(this);
-    connect(server_, &QTcpServer::newConnection, this, &TransferWindow::onNewConnection);
-    server_->listen(QHostAddress::Any, port);
+    server = new QTcpServer(this);
+    connect(server, &QTcpServer::newConnection, this, &TransferWindow::onNewConnection);
+    server->listen(QHostAddress::Any, port);
     listen_window->list_status->setText("Waiting for connection...\n");
     statusBar()->showMessage("Waiting for incoming connection....\n");
     resetTransferState();
@@ -308,13 +308,13 @@ void TransferWindow::onListen() {
 }
 
 void TransferWindow::onChat() {
-    if (chat_connect_window_ == nullptr) {
-        chat_connect_window_ = new ChatConnectWindow(this);
+    if (chat_connect_window == nullptr) {
+        chat_connect_window = new ChatConnectWindow(this);
     }
 
-    chat_connect_window_->show();
-    chat_connect_window_->raise();
-    chat_connect_window_->activateWindow();
+    chat_connect_window->show();
+    chat_connect_window->raise();
+    chat_connect_window->activateWindow();
 }
 
 void TransferWindow::onCancel() {
@@ -335,9 +335,9 @@ void TransferWindow::onConConnected() {
     file_show->setEnabled(false);
 
     statusBar()->showMessage(tr("Connected"));
-    expecting_transfer_header_ = true;
+    expecting_transfer_header = true;
     const QByteArray password = con_window->tex_pass->text().toUtf8() + '\n';
-    socket_->write(password);
+    socket->write(password);
 }
 void TransferWindow::onConDisconnected() {
     std::cout << "Disconnected..\n";
@@ -347,8 +347,8 @@ void TransferWindow::onConDisconnected() {
     statusBar()->showMessage(tr("Disconnected"));
     con_window->con_start->setEnabled(true);
     listen_window->list_start->setEnabled(true);
-    expecting_transfer_header_ = false;
-    if (output_file_.isOpen()) {
+    expecting_transfer_header = false;
+    if (output_file.isOpen()) {
         resetTransferState();
     }
 }
@@ -369,26 +369,26 @@ void TransferWindow::onConError(QAbstractSocket::SocketError se) {
 
     con_window->con_start->setEnabled(true);
     listen_window->list_start->setEnabled(true);
-    if (output_file_.isOpen() || expecting_transfer_header_) {
+    if (output_file.isOpen() || expecting_transfer_header) {
         resetTransferState();
     }
 }
 
 void TransferWindow::onConReadyRead() {
-    receive_buffer_ += socket_->readAll();
+    receive_buffer += socket->readAll();
 
-    if (expecting_transfer_header_) {
-        const int newline = receive_buffer_.indexOf('\n');
+    if (expecting_transfer_header) {
+        const int newline = receive_buffer.indexOf('\n');
         if (newline < 0) {
             return;
         }
 
-        const QByteArray header = receive_buffer_.left(newline);
-        receive_buffer_.remove(0, newline + 1);
+        const QByteArray header = receive_buffer.left(newline);
+        receive_buffer.remove(0, newline + 1);
 
         if (header == "incorrect") {
             statusBar()->showMessage(tr("Incorrect Password"));
-            socket_->close();
+            socket->close();
             QMessageBox::information(this, tr("Invalid Password"), tr("The password is incorrect. Try again.\n"));
             resetTransferState();
             return;
@@ -396,7 +396,7 @@ void TransferWindow::onConReadyRead() {
 
         const int colon = header.indexOf(':');
         if (colon < 0) {
-            socket_->close();
+            socket->close();
             QMessageBox::warning(this, tr("Invalid host"), tr("Invalid host..\n"));
             con_window->show();
             resetTransferState();
@@ -410,7 +410,7 @@ void TransferWindow::onConReadyRead() {
         const auto [ptr, ec] = std::from_chars(size_bytes.constData(), size_bytes.constData() + size_bytes.size(), len);
         if (ec != std::errc{} || ptr == size_bytes.constData() || len < 0) {
             QMessageBox::warning(this, tr("Invalid File Length."), tr("Invalid File Length"));
-            socket_->close();
+            socket->close();
             resetTransferState();
             return;
         }
@@ -419,22 +419,22 @@ void TransferWindow::onConReadyRead() {
         transfer_bar->setRange(0, 100);
         if (!openReceivedFile(filename)) {
             QMessageBox::warning(this, tr("Error could not open file"), tr("Couldn't open file"));
-            socket_->close();
+            socket->close();
             resetTransferState();
             return;
         }
 
-        expecting_transfer_header_ = false;
+        expecting_transfer_header = false;
     }
 
-    if (!expecting_transfer_header_ && output_file_.isOpen()) {
-        const qint64 bytes_needed = file_len - receive_offset_;
-        const qint64 bytes_to_write = std::min(bytes_needed, static_cast<qint64>(receive_buffer_.size()));
+    if (!expecting_transfer_header && output_file.isOpen()) {
+        const qint64 bytes_needed = file_len - receive_offset;
+        const qint64 bytes_to_write = std::min(bytes_needed, static_cast<qint64>(receive_buffer.size()));
         if (bytes_to_write > 0) {
             qint64 written_total = 0;
             while (written_total < bytes_to_write) {
                 const qint64 written =
-                    output_file_.write(receive_buffer_.constData() + written_total, bytes_to_write - written_total);
+                    output_file.write(receive_buffer.constData() + written_total, bytes_to_write - written_total);
                 if (written <= 0) {
                     break;
                 }
@@ -442,14 +442,14 @@ void TransferWindow::onConReadyRead() {
             }
 
             if (written_total > 0) {
-                receive_offset_ += written_total;
-                receive_buffer_.remove(0, written_total);
-                transfer_bar->setValue(progressPercent(static_cast<std::uintmax_t>(receive_offset_),
+                receive_offset += written_total;
+                receive_buffer.remove(0, written_total);
+                transfer_bar->setValue(progressPercent(static_cast<std::uintmax_t>(receive_offset),
                                                        static_cast<std::uintmax_t>(file_len)));
             }
         }
 
-        if (receive_offset_ >= file_len) {
+        if (receive_offset >= file_len) {
             finishReceiveSuccess();
         }
     }
@@ -470,8 +470,8 @@ void TransferWindow::onListDisconnected() {
     statusBar()->showMessage("Disconnected");
     listen_window->list_start->setEnabled(true);
     con_window->con_start->setEnabled(true);
-    sending_transfer_ = false;
-    if (!send_finished_ && input_file_.isOpen()) {
+    sending_transfer = false;
+    if (!send_finished && input_file.isOpen()) {
         resetTransferState();
     }
 }
@@ -480,13 +480,13 @@ void TransferWindow::onListError(QAbstractSocket::SocketError /*se*/) {
     std::cout << "An Error has occured.\n";
     con_window->con_start->setEnabled(true);
     listen_window->list_start->setEnabled(true);
-    if (input_file_.isOpen() || sending_transfer_) {
+    if (input_file.isOpen() || sending_transfer) {
         resetTransferState();
     }
 }
 
 void TransferWindow::onListReadyRead() {
-    if (!sending_transfer_) {
+    if (!sending_transfer) {
         const QByteArray password_line = list_socket->readLine();
         const QByteArray expected = listen_window->list_pass->text().toUtf8();
         if (password_line.trimmed() != expected) {
@@ -503,7 +503,7 @@ void TransferWindow::onListReadyRead() {
 }
 
 void TransferWindow::onListBytesWritten(qint64 bytes) {
-    if (!sending_transfer_ || send_finished_) {
+    if (!sending_transfer || send_finished) {
         return;
     }
 
@@ -515,13 +515,13 @@ void TransferWindow::onListBytesWritten(qint64 bytes) {
                                            static_cast<std::uintmax_t>(file_len)));
     pumpSendFile();
 
-    if (send_offset_ >= file_len && list_socket->bytesToWrite() == 0) {
+    if (send_offset >= file_len && list_socket->bytesToWrite() == 0) {
         finishSendSuccess();
     }
 }
 
 void TransferWindow::onNewConnection() {
-    list_socket = server_->nextPendingConnection();
+    list_socket = server->nextPendingConnection();
     listen_window->hide();
     connect(list_socket, &QTcpSocket::disconnected, this, &TransferWindow::onListDisconnected);
     connect(list_socket, &QTcpSocket::errorOccurred, this, &TransferWindow::onListError);
@@ -615,7 +615,7 @@ void ConnectWindow::onConnect() {
         QMessageBox::information(this, tr("Requires dir path"), tr("You need to provide the directory to save to.."));
         return;
     }
-    parent_->connectTo(ip, the_port);
+    parent_window->connectTo(ip, the_port);
 }
 
 void ConnectWindow::onSelectDir() {
@@ -632,7 +632,7 @@ void ConnectWindow::onSelectDir() {
 }
 
 void ConnectWindow::setParentWindow(TransferWindow *win) {
-    parent_ = win;
+    parent_window = win;
 }
 
 ListenWindow::ListenWindow(QWidget *parent) : QDialog(parent) {
@@ -706,7 +706,7 @@ void ListenWindow::onListen() {
         return;
     }
 
-    parent_->listenTo(port.toInt());
+    parent_window->listenTo(port.toInt());
 }
 
 void ListenWindow::onSelectFile() {
@@ -718,5 +718,5 @@ void ListenWindow::onSelectFile() {
 }
 
 void ListenWindow::setParentWindow(TransferWindow *win) {
-    parent_ = win;
+    parent_window = win;
 }
